@@ -1,0 +1,33 @@
+Metadata-Version: 2.1
+Name: udemy_userAPI
+Version: 0.1
+Summary: Obtenha detalhes de cursos que o usuário esteja inscrito da plataforma Udemy,usando o EndPoint de
+Author: PauloCesar-dev404
+Author-email: paulocesar0073dev404@gmail.com
+License: MIT
+Project-URL: Código Fonte, https://raw.githubusercontent.com/PauloCesar-dev404/udemy_userAPI/main/udemy_userAPI-0.1.tar.gz
+Project-URL: lib, https://raw.githubusercontent.com/PauloCesar-dev404/udemy_userAPI/main/udemy_userAPI-0.1-py3-none-any.whl
+Project-URL: GitHub, https://github.com/PauloCesar-dev404/udemy_userAPI
+Project-URL: Bugs/Melhorias, https://github.com/PauloCesar-dev404/udemy_userAPI/issues
+Project-URL: Documentação, https://github.com/PauloCesar-dev404/udemy_userAPI/wiki
+Keywords: udemy,udemy python,pyudemy,udemy_userAPI,udemy api
+Platform: any
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: requests
+Requires-Dist: cloudscraper
+
+# udemy-userAPI
+
+
+![Versão](https://img.shields.io/badge/version-0.1-orange)
+![Licença](https://img.shields.io/badge/license-MIT-orange)
+[![Sponsor](https://img.shields.io/badge/💲Donate-yellow)](https://apoia.se/paulocesar-dev404)
+[![Sponsor](https://img.shields.io/badge/Documentation-green)](https://github.com/PauloCesar-dev404/udemy-userAPI/wiki)
+
+
+Obtenha detalhes de cursos da plataforma udemy com a api de usuário,usando esta lib
+---
+- [x] Obter cursos inscritos(acesso por plano ou cursos free)
+- [x] Obter detalhes de Aulas
+- [x] Obter detalhes de um Curso
