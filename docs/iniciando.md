@@ -1,5 +1,5 @@
 <div align="center">
-    <img src="https://github.com/PauloCesar-dev404/udemy_userAPI/blob/main/assets/udemy_userAPI-logo.png" alt="udemy_userAPI-logo" width="200"/>
+    <img src="https://github.com/PauloCesar-dev404/udemy-userAPI/blob/main/assets/udemy_userAPI-logo.png" alt="udemy_userAPI-logo" width="200"/>
   
 ![Versão](https://img.shields.io/badge/version-0.1-orange)
 ![Licença](https://img.shields.io/badge/license-MIT-orange)
