@@ -4,8 +4,6 @@ from .exeptions import UdemyUserApiExceptions, LoginException
 from .api import HEADERS_USER
 
 
-
-
 def get_courses_plan(tipe: str) -> list:
     courses_data = []
     if tipe == 'default':
@@ -70,7 +68,7 @@ def get_course_infor(course_id):
         f'https://www.udemy.com/api-2.0/courses/{course_id}/?fields[course]=title,context_info,primary_category,'
         'primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,'
         'num_subscribers')
-    response = requests.get(end_point,headers=HEADERS_USER)
+    response = requests.get(end_point, headers=HEADERS_USER)
     if response.status_code == 200:
         return json.loads(response.text)
     else:

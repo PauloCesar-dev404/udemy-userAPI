@@ -4,6 +4,7 @@ from .sections import get_course_infor
 from .api import get_links, remove_tag, parser_chapers, extract_files, HEADERS_USER
 
 
+
 class Files:
     def __init__(self, files: list[dict], id_course):
         self.__data = files

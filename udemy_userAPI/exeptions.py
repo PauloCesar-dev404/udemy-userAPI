@@ -1,3 +1,4 @@
+
 class UdemyUserApiExceptions(Exception):
     def __init__(self, message="Udemy_UserApi Generic Error!"):
         self.message = message

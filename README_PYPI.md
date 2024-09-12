@@ -12,3 +12,4 @@ Obtenha detalhes de cursos da plataforma udemy com a api de usuário,usando esta
 - [x] Obter cursos inscritos(acesso por plano ou cursos free)
 - [x] Obter detalhes de Aulas
 - [x] Obter detalhes de um Curso
+

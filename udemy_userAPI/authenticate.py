@@ -159,3 +159,4 @@ class UdemyAuth:
             return cookies_str
         else:
             raise LoginException()
+

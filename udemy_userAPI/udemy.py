@@ -3,6 +3,7 @@ from .sections import get_courses_plan, get_details_courses
 from .api import HEADERS_USER
 from .bultins import Course
 from .authenticate import UdemyAuth
+
 auth = UdemyAuth()
 verif_login = auth.verif_login
 

@@ -45,7 +45,11 @@ def parser_chapers(results):
     :param tip: chaper,videos
     :return:
     """
-    results = results.get('results')
+    if not results:
+        raise UdemyUserApiExceptions("Não foi possível obter detalhes do curso!")
+    results = results.get('results', None)
+    if not results:
+        raise UdemyUserApiExceptions("Não foi possível obter detalhes do curso!")
     chapters_dict = {}  # Dicionário para armazenar os capítulos e seus vídeos correspondentes
 
     # Primeiro, construímos um dicionário de capítulos
