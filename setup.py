@@ -1,4 +1,4 @@
-from udemy_userAPI.__version__ import __version__, __autor__, __repo__, __source__, __lib__, __lib_name__, \
+from udemy_userAPI.__version__ import __version__, __autor__, __repo__, __lib_name__, \
     __description__
 from setuptools import setup, find_packages
 
@@ -25,8 +25,6 @@ setup(
     include_package_data=True,
     platforms=["any"],
     project_urls={
-        "Código Fonte": __source__,
-        "lib": __lib__,
         'GitHub': __repo__,
         "Bugs/Melhorias": f"{__repo__}/issues",
         "Documentação": f"{__repo__}/wiki",
