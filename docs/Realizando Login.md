@@ -15,10 +15,10 @@ else:
 
 ```
 ## parâmetros :
-- email: oo email do usuário cuja teha acesso a plataforma .
+- email: email do usuário cuja teha acesso a plataforma .
 - password: a senha do usuário
 
-voce pode veririfcar se um usuario estar logado usando `verif_login` que retorna um bool
+você pode verificar se um usuário estar logado usando `verif_login` que retorna um bool
 
 ## outras funcioaliddes :
-voce pode obter os seus cookies ee secao usando `load_cookies` que retorn em uma string os cokies de seção.
+você pode obter os seus cookies de seção usando `load_cookies` que retorna em uma string os cokies de seção.
