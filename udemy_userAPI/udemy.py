@@ -30,10 +30,25 @@ class Udemy:
 
     @property
     def my_subscribed_courses(self) -> list[dict]:
-        """obtém os cursos que o usuário esatá inscrito"""
+        """Obtém os cursos que o usuário está inscrito, excluindo listas vazias ou nulas"""
         try:
-            courses = get_courses_plan(tipe='default')
-            return courses
+            # Obtém os cursos
+            courses1 = get_courses_plan(tipe='default')  # lista de cursos padrão
+            courses2 = get_courses_plan(tipe='plan')  # lista de cursos de um plano
+
+            # Cria uma lista vazia para armazenar os cursos válidos
+            all_courses = []
+
+            # Adiciona a lista somente se não estiver vazia ou nula
+            if courses1:
+                for i in courses1:
+                    all_courses.extend(i)
+            if courses2:
+                for i in courses2:
+                    all_courses.extend(i)
+
+            return all_courses
+
         except UdemyUserApiExceptions as e:
             UnhandledExceptions(e)
 

@@ -18,7 +18,8 @@ setup(
     keywords=["udemy", "udemy python", "pyudemy","udemy_userAPI","udemy api"],
     install_requires=[
         'requests',
-        'cloudscraper'
+        'cloudscraper',
+        'pywidevine'
     ],
     packages=find_packages(),
     zip_safe=False,

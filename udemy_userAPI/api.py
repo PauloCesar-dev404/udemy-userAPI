@@ -1,7 +1,13 @@
 import json
-import requests
 from .exeptions import UdemyUserApiExceptions, UnhandledExceptions
 from .authenticate import UdemyAuth
+import os.path
+from pywidevine.cdm import Cdm
+from pywidevine.device import Device
+from pywidevine.pssh import PSSH
+import requests
+import base64
+import logging
 
 AUTH = UdemyAuth()
 COOKIES = AUTH.load_cookies
@@ -38,6 +44,142 @@ HEADERS_octet_stream = {
     'accept-language': 'en-US,en;q=0.9',
 }
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.WARNING)
+# Obtém o diretório do arquivo em execução
+locate = os.path.dirname(__file__)
+# Cria o caminho para o arquivo bin.wvd na subpasta bin
+WVD_FILE_PATH = os.path.join(locate, 'mpd_analyzer', 'bin.wvd')
+device = Device.load(WVD_FILE_PATH)
+cdm = Cdm.from_device(device)
+
+
+def read_pssh_from_bytes(bytes):
+    pssh_offset = bytes.rfind(b'pssh')
+    _start = pssh_offset - 4
+    _end = pssh_offset - 4 + bytes[pssh_offset - 1]
+    pssh = bytes[_start:_end]
+    return pssh
+
+
+def get_pssh(init_url):
+    logger.info(f"INIT URL: {init_url}")
+    res = requests.get(init_url, headers=HEADERS_octet_stream)
+    if not res.ok:
+        logger.exception("Could not download init segment: " + res.text)
+        return
+    pssh = read_pssh_from_bytes(res.content)
+    return base64.b64encode(pssh).decode("utf-8")
+
+
+def get_highest_resolution(resolutions):
+    """
+    Retorna a maior resolução em uma lista de resoluções.
+
+    Args:
+        resolutions (list of tuple): Lista de resoluções, onde cada tupla representa (largura, altura).
+
+    Returns:
+        tuple: A maior resolução em termos de largura e altura.
+    """
+    if not resolutions:
+        return None
+    return max(resolutions, key=lambda res: (res[0], res[1]))
+
+
+def organize_streams(streams):
+    organized_streams = {
+        'dash': [],
+        'hls': []
+    }
+
+    best_video = None
+
+    for stream in streams:
+        # Verifica e adiciona streams DASH
+        if stream['type'] == 'application/dash+xml':
+            organized_streams['dash'].append({
+                'src': stream['src'],
+                'label': stream.get('label', 'unknown')
+            })
+
+        # Verifica e adiciona streams HLS (m3u8)
+        elif stream['type'] == 'application/x-mpegURL':
+            organized_streams['hls'].append({
+                'src': stream['src'],
+                'label': stream.get('label', 'auto')
+            })
+
+        # Verifica streams de vídeo (mp4)
+        elif stream['type'] == 'video/mp4':
+            # Seleciona o vídeo com a maior resolução (baseado no label)
+            if best_video is None or int(stream['label']) > int(best_video['label']):
+                best_video = {
+                    'src': stream['src'],
+                    'label': stream['label']
+                }
+
+    # Adiciona o melhor vídeo encontrado na lista 'hls'
+    if best_video:
+        organized_streams['hls'].append(best_video)
+
+    return organized_streams
+
+
+def extract(pssh, license_token):
+    license_url = (f"https://www.udemy.com/api-2.0/media-license-server/validate-auth-token?drm_type=widevine"
+                   f"&auth_token={license_token}")
+    logger.info(f"License URL: {license_url}")
+    session_id = cdm.open()
+    challenge = cdm.get_license_challenge(session_id, PSSH(pssh))
+    logger.info("Sending license request now")
+    license = requests.post(license_url, headers=HEADERS_octet_stream, data=challenge)
+    try:
+        str(license.content, "utf-8")
+    except:
+        base64_license = base64.b64encode(license.content).decode()
+        logger.info("[+] Acquired license sucessfully!")
+    else:
+        if "CAIS" not in license.text:
+            logger.exception("[-] Couldn't to get license: [{}]\n{}".format(license.status_code, license.text))
+            return
+
+    logger.info("Trying to get keys now")
+    cdm.parse_license(session_id, license.content)
+    final_keys = ""
+    for key in cdm.get_keys(session_id):
+        logger.info(f"[+] Keys: [{key.type}] - {key.kid.hex}:{key.key.hex()}")
+        if key.type == "CONTENT":
+            final_keys += f"{key.kid.hex}:{key.key.hex()}"
+    cdm.close(session_id)
+
+    if final_keys == "":
+        logger.exception("Keys were not extracted sucessfully.")
+        return
+    return final_keys.strip()
+
+
+def get_mpd_file(mpd_url):
+    try:
+        # Faz a solicitação GET com os cabeçalhos
+        response = requests.get(mpd_url, headers=HEADERS_USER)
+        data = []
+        # Exibe o código de status
+        if response.status_code == 200:
+            return response.content
+        else:
+            UnhandledExceptions(f"erro ao obter dados de aulas!! {response.status_code}")
+    except requests.ConnectionError as e:
+        UdemyUserApiExceptions(f"Erro de conexão: {e}")
+    except requests.Timeout as e:
+        UdemyUserApiExceptions(f"Tempo de requisição excedido: {e}")
+    except requests.TooManyRedirects as e:
+        UdemyUserApiExceptions(f"Limite de redirecionamentos excedido: {e}")
+    except requests.HTTPError as e:
+        UdemyUserApiExceptions(f"Erro HTTP: {e}")
+    except Exception as e:
+        UnhandledExceptions(f"Errro Ao Obter Mídias:{e}")
+
 
 def parser_chapers(results):
     """
@@ -67,17 +209,55 @@ def parser_chapers(results):
         elif _class == 'lecture' and current_chapter is not None:
             asset = dictionary.get('asset')
             if asset:
-                video_title = asset.get('title', None)
+                video_title = dictionary.get('title', None)
                 if not video_title:
                     video_title = 'Files'
                 current_chapter['videos_in_chapter'].append({
                     'video_title': video_title,
                     'title_lecture': dictionary.get('title'),
-                    'id_lecture': dictionary.get('id'),
-                    'id_asset': asset.get('id')
+                    'lecture_id': dictionary.get('id'),
+                    'asset_id': asset.get('id')
                 })
-
     return chapters_dict
+
+
+def get_add_files(course_id: int):
+    url = (f'https://www.udemy.com/api-2.0/courses/{course_id}/subscriber-curriculum-items/?page_size=2000&fields['
+           f'lecture]=title,object_index,is_published,sort_order,created,asset,supplementary_assets,is_free&fields['
+           f'quiz]=title,object_index,is_published,sort_order,type&fields[practice]=title,object_index,is_published,'
+           f'sort_order&fields[chapter]=title,object_index,is_published,sort_order&fields[asset]=title,filename,'
+           f'asset_type,status,time_estimation,is_external&caching_intent=True')
+    try:
+        # Faz a solicitação GET com os cabeçalhos
+        response = requests.get(url, headers=HEADERS_USER)
+        data = []
+        # Exibe o código de status
+        if response.status_code == 200:
+            a = json.loads(response.text)
+            return a
+        else:
+            UnhandledExceptions(f"erro ao obter dados de aulas!! {response.status_code}")
+
+    except requests.ConnectionError as e:
+        UdemyUserApiExceptions(f"Erro de conexão: {e}")
+    except requests.Timeout as e:
+        UdemyUserApiExceptions(f"Tempo de requisição excedido: {e}")
+    except requests.TooManyRedirects as e:
+        UdemyUserApiExceptions(f"Limite de redirecionamentos excedido: {e}")
+    except requests.HTTPError as e:
+        UdemyUserApiExceptions(f"Erro HTTP: {e}")
+    except Exception as e:
+        UnhandledExceptions(f"Errro Ao Obter Mídias:{e}")
+
+
+def get_files_aule(lecture_id_filter, data: list):
+    files = []
+    # print(f'DEBUG:\n\n{data}')
+    for files_data in data:
+        lecture_id = files_data.get('lecture_id')
+        if lecture_id == lecture_id_filter:
+            files.append(files_data)
+    return files
 
 
 def get_links(course_id: int, id_lecture: int):
@@ -120,10 +300,37 @@ def remove_tag(d: str):
     return new
 
 
+def get_external_liks(course_id: int, id_lecture, asset_id):
+    url = (f'https://www.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/lectures/{id_lecture}/'
+           f'supplementary-assets/{asset_id}/?fields[asset]=external_url')
+    try:
+        # Faz a solicitação GET com os cabeçalhos
+        response = requests.get(url, headers=HEADERS_USER)
+        data = []
+        # Exibe o código de status
+        if response.status_code == 200:
+            a = json.loads(response.text)
+            return a
+        else:
+            UnhandledExceptions(f"erro ao obter dados de aulas!! {response.status_code}")
+
+    except requests.ConnectionError as e:
+        UdemyUserApiExceptions(f"Erro de conexão: {e}")
+    except requests.Timeout as e:
+        UdemyUserApiExceptions(f"Tempo de requisição excedido: {e}")
+    except requests.TooManyRedirects as e:
+        UdemyUserApiExceptions(f"Limite de redirecionamentos excedido: {e}")
+    except requests.HTTPError as e:
+        UdemyUserApiExceptions(f"Erro HTTP: {e}")
+    except Exception as e:
+        UnhandledExceptions(f"Errro Ao Obter Mídias:{e}")
+
+
 def extract_files(supplementary_assets: list) -> list:
     """Obtém o ID da lecture, o ID do asset, o asset_type e o filename."""
     files = []
     for item in supplementary_assets:
+        # print(f'DEBUG files:\n{item}\n\n')
         lecture_title = item.get('lecture_title')
         lecture_id = item.get('lecture_id')
         asset = item.get('asset', {})
@@ -131,14 +338,15 @@ def extract_files(supplementary_assets: list) -> list:
         asset_type = asset.get('asset_type')
         filename = asset.get('filename')
         title = asset.get('title')
-
+        external_url = asset.get('is_external', None)
         files.append({
             'lecture_id': lecture_id,
             'asset_id': asset_id,
             'asset_type': asset_type,
             'filename': filename,
             'title': title,
-            'lecture_title': lecture_title
+            'lecture_title': lecture_title,
+            'ExternalLink': external_url
         })
     return files
 
@@ -257,3 +465,37 @@ def format_size(byte_size):
             return f"{byte_size / TB:.2f} TB"
     except Exception as e:
         return byte_size
+
+
+def lecture_infor(course_id: int, id_lecture: int):
+    edpoint = (f"https://www.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/lectures/{id_lecture}/?"
+               f"fields[asset]=media_license_token&q=0.06925737374647678")
+    r = requests.get(edpoint, headers=HEADERS_USER)
+    if r.status_code == 200:
+        return json.loads(r.text)
+
+
+def assets_infor(course_id: int, id_lecture: int, assets_id: int):
+    endpoint = (f'https://www.udemy.com/api-2.0/assets/{assets_id}/?fields[asset]=@min,status,delayed_asset_message,'
+                f'processing_errors,body&course_id={course_id}&lecture_id={id_lecture}')
+    r = requests.get(endpoint, headers=HEADERS_USER)
+    if r.status_code == 200:
+        dt = json.loads(r.text)
+        body = dt.get("body")
+        title = lecture_infor(course_id=course_id, id_lecture=id_lecture).get("title")
+        return save_html(body, title_lecture=title)
+
+
+def save_html(body, title_lecture):
+    html_content = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{title_lecture}</title>
+</head>
+<body>
+{body}
+</body>
+</html>"""
+
+    return html_content

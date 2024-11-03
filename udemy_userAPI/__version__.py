@@ -1,5 +1,5 @@
-__version__ = '0.1.5'
-__lib_name__ = 'udemy_userAPI' # local name
+__version__ = '0.1.8'
+__lib_name__ = 'udemy_userAPI'  # local name
 __repo_name__ = 'udemy-userAPI'
 __autor__ = 'PauloCesar-dev404'
 __repo__ = f'https://github.com/PauloCesar-dev404/{__repo_name__}'
