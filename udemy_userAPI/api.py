@@ -49,7 +49,9 @@ logger.setLevel(logging.WARNING)
 # Obtém o diretório do arquivo em execução
 locate = os.path.dirname(__file__)
 # Cria o caminho para o arquivo bin.wvd na subpasta bin
+binn = 'bin.py'
 WVD_FILE_PATH = os.path.join(locate, 'mpd_analyzer', 'bin.wvd')
+
 device = Device.load(WVD_FILE_PATH)
 cdm = Cdm.from_device(device)
 
