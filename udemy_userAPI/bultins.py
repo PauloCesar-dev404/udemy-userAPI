@@ -245,8 +245,7 @@ class Course:
                     'title': title,
                     'lecture_id': id_lecture,
                     'asset_id': id_asset,
-                    'section_order': section_order,
-                    'lecture_order': index + 1  # Numeração da seção e vídeo
+                    'section_order': section_order
                 }
                 videos.append(dt)
             section_order += 1  # Incrementar o número da seção após processar os vídeos do capítulo

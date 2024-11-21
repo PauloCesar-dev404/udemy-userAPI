@@ -1,2 +1,3 @@
 include README_PYPI.md
 include udemy_userAPI/mpd_analyzer/bin.wvd
+include udemy_userAPI/.cache/.udemy_userAPI
