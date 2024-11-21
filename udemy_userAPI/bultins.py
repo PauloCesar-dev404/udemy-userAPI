@@ -236,7 +236,7 @@ class Course:
 
         for chapter in self.__data.values():
             for index, video in enumerate(chapter.get('videos_in_chapter', [])):
-                section = f"{section_order} {chapter.get('title_chapter')}"  # Adicionar numeração da seção
+                section = f"{chapter.get('title_chapter')}"  # Adicionar numeração da seção
                 title = video.get('video_title')
                 id_lecture = video.get('lecture_id')
                 id_asset = video.get('asset_id')
