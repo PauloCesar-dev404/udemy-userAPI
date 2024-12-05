@@ -70,10 +70,14 @@ class UdemyAuth:
                 resp = requests.get(url=url, headers=headers)
                 if resp.status_code == 200:
                     convert = json.loads(resp.text)
-                    if convert.get('header', {}).get('isLoggedIn', False):
-                        return True
+                    isLoggedIn = convert.get('header', {}).get('isLoggedIn',False)
+                    if isLoggedIn:
+                        if isLoggedIn == True:
+                            return True
+                        else:
+                            return False
                     else:
-                        return False
+                        raise LoginException(f"Erro Ao obter login atualize a lib! -> {convert}")
             except requests.ConnectionError as e:
                 raise UdemyUserApiExceptions(f"Erro de conexão: {e}")
             except requests.Timeout as e:
