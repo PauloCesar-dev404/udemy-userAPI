@@ -21,7 +21,7 @@ udemy = udemy_userAPI.Udemy()
 auth = udemy_userAPI.UdemyAuth()
 
 # Verifica se o login foi bem-sucedido
-is_login = auth.verif_login
+is_login = auth.verif_login()
 if is_login:
     # Defina o ID do curso que você deseja consultar
     course_id = 1234  # Substitua pelo ID real do curso

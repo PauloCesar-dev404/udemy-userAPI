@@ -19,7 +19,6 @@ class Udemy:
         if verif_login is None:
             raise LoginException("User Not Logged!")
 
-    @property
     def my_subscribed_courses_by_plan(self) -> list[dict]:
         """obtém os cursos que o usuário esatá inscrito, obtidos atraves de planos(assinatura)"""
         try:
@@ -28,7 +27,6 @@ class Udemy:
         except UdemyUserApiExceptions as e:
             UnhandledExceptions(e)
 
-    @property
     def my_subscribed_courses(self) -> list[dict]:
         """Obtém os cursos que o usuário está inscrito, excluindo listas vazias ou nulas"""
         try:

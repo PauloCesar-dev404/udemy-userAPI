@@ -21,14 +21,14 @@ udemy = udemy_userAPI.Udemy()
 auth = udemy_userAPI.UdemyAuth()
 
 # Verifica se o login foi bem-sucedido
-is_login = auth.verif_login
+is_login = auth.verif_login()
 
 if is_login:
     # Exibe os cursos por plano de assinatura
-    print("Cursos por plano:", udemy.my_subscribed_courses_by_plan)
+    print("Cursos por plano:", udemy.my_subscribed_courses_by_plan())
     
     # Exibe os cursos normais (adquiridos ou gratuitos)
-    print("Cursos default:", udemy.my_subscribed_courses)
+    print("Cursos default:", udemy.my_subscribed_courses())
     
 else:
     print("Não está Logado...")

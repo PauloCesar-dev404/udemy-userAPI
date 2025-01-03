@@ -6,7 +6,7 @@ import udemy_userAPI
 
 auth = udemy_userAPI.UdemyAuth()
 login = auth.login(email='',password='')
-is_login = auth.verif_login
+is_login = auth.verif_login()
 
 if is_login:
     print("Logado!")

@@ -1,9 +1,13 @@
 import json
 import os
 import pickle
+import traceback
+
 import requests
 from .exeptions import UnhandledExceptions, UdemyUserApiExceptions, LoginException
 import cloudscraper
+
+DEBUG = False
 
 
 class UdemyAuth:
@@ -23,14 +27,6 @@ class UdemyAuth:
         file_name = '.udemy_userAPI'  # Nome do arquivo
         self.__file_path = os.path.join(self.__user_dir, file_name)
 
-    def __make_cookies(self, client_id: str, access_token: str, csrf_token: str):
-        self.__cookie_dict = {
-            'client_id': client_id,
-            'access_token': access_token,
-            'csrf_token': csrf_token
-        }
-
-    @property
     def verif_login(self):
         """verificar se o usuario estar logado."""
 
@@ -43,6 +39,9 @@ class UdemyAuth:
                     cookies_str = "; ".join([f"{key}={value}" for key, value in cookies_dict.items()])
                     return cookies_str
             except Exception as e:
+                if DEBUG:
+                    e = traceback.format_exc()
+                    raise LoginException(e)
                 return False
 
         log = verif_config()
@@ -70,7 +69,7 @@ class UdemyAuth:
                 resp = requests.get(url=url, headers=headers)
                 if resp.status_code == 200:
                     convert = json.loads(resp.text)
-                    isLoggedIn = convert.get('header', {}).get('isLoggedIn',False)
+                    isLoggedIn = convert.get('header', {}).get('isLoggedIn', False)
                     if isLoggedIn:
                         if isLoggedIn == True:
                             return True
@@ -143,7 +142,6 @@ class UdemyAuth:
 
             # Verifica a resposta para determinar se o login foi bem-sucedido
             if "returnUrl" in r.text:
-                self.__make_cookies(r.cookies.get("client_id"), r.cookies.get("access_token"), csrf_token)
                 self.__save_cookies(s.cookies)
             else:
                 login_error = r.json().get("error", {}).get("data", {}).get("formErrors", [])[0]
@@ -156,30 +154,37 @@ class UdemyAuth:
 
             return s
         except Exception as e:
-            LoginException(e)
+            if DEBUG:
+                e = traceback.format_exc()
+            raise LoginException(e)
 
     def __save_cookies(self, cookies):
         try:
             with open(fr'{self.__file_path}', 'wb') as f:
                 pickle.dump(cookies, f)
         except Exception as e:
-            LoginException(e)
+            raise LoginException(e)
 
     @property
     def load_cookies(self) -> str:
-        """carrega cookies e retorna-os em uma string formatada"""
+        """Carrega cookies e retorna-os em uma string formatada"""
         try:
-            file = os.path.join(fr'{self.__file_path}')
-            if os.path.exists(file):
-                with open(fr'{self.__file_path}', 'rb') as f:
+            file = os.path.join(self.__file_path)
+            if os.path.exists(file) and os.path.getsize(file) > 0:  # Verifica se o arquivo existe e não está vazio
+                with open(file, 'rb') as f:
                     cookies = pickle.load(f)
+                # Converte cookies em formato de string
                 cookies_dict = {cookie.name: cookie.value for cookie in cookies}
                 cookies_str = "; ".join([f"{key}={value}" for key, value in cookies_dict.items()])
                 return cookies_str
             else:
-                return 'None'
+                return ""  # Retorna uma string vazia se o arquivo não existir ou estiver vazio
+        except (EOFError, pickle.UnpicklingError):  # Trata arquivos vazios ou corrompidos
+            return ""  # Retorna uma string vazia
         except Exception as e:
-            LoginException(e)
+            if DEBUG:
+                e = traceback.format_exc()
+            raise LoginException(f"Erro ao carregar cookies: {e}")
 
     def remove_cookies(self):
         if os.path.exists(self.__file_path):
