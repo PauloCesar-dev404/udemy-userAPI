@@ -10,9 +10,10 @@ from .mpd_analyzer import MPDParser
 class DRM:
     def __init__(self, license_token: str, get_media_sources: list):
         self.__mpd_content = None
-        self.__dash_url = organize_streams(streams=get_media_sources).get('dash')
         self.__token = license_token
-        self.get_key_for_lesson()
+        self.__dash_url = organize_streams(streams=get_media_sources).get('dash', {})
+        if not license_token or not get_media_sources or not self.__dash_url:
+            return
 
     def get_key_for_lesson(self):
         """get keys for lesson"""
@@ -28,6 +29,12 @@ class DRM:
                     keys = extract(pssh=pssh, license_token=self.__token)
                     if keys:
                         return keys
+                    else:
+                        return None
+            else:
+                return None
+        else:
+            return None
 
 
 class Files:
@@ -44,11 +51,13 @@ class Files:
             lecture_id = files.get('lecture_id', None)
             asset_id = files.get('asset_id', None)
             title = files.get("title", None)
-            lecture_title = files.get('lecture_title')
-            external_link = files.get('ExternalLink')
+            lecture_title = files.get('lecture_title', None)
+            external_link = files.get('ExternalLink', None)
             if external_link:
                 lnk = get_external_liks(course_id=self.__id_course, id_lecture=lecture_id, asset_id=asset_id)
-                dt_file = {'title-file': title, 'lecture_title': lecture_title, 'lecture_id': lecture_id,
+                dt_file = {'title-file': title,
+                           'lecture_title': lecture_title,
+                           'lecture_id': lecture_id,
                            'external_link': external_link,
                            'data-file': lnk.get('external_url', None)}
                 return dt_file
@@ -59,8 +68,9 @@ class Files:
                     headers=HEADERS_USER)
                 if resp.status_code == 200:
                     da = json.loads(resp.text)
-                    ## para cdaa dict de um fle colocar seu titulo:
-                    dt_file = {'title-file': title, 'lecture_title': lecture_title, 'lecture_id': lecture_id,
+                    dt_file = {'title-file': title,
+                               'lecture_title': lecture_title,
+                               'lecture_id': lecture_id,
                                'external_link': external_link,
                                'data-file': da['download_urls']}
                     download_urls.append(dt_file)
@@ -128,12 +138,10 @@ class Lecture:
     def course_is_drmed(self) -> DRM:
         """verifica se a aula possui DRM se sim retorna as keys da aula...
          retorna 'kid:key' or None"""
-        if self.__asset.get('course_is_drmed'):
+        if self.__asset.get('course_is_drmed', {}):
             d = DRM(license_token=self.get_media_license_token,
                     get_media_sources=self.get_media_sources)
             return d
-        else:
-            return self.__asset.get('course_is_drmed')
 
     @property
     def get_download_urls(self) -> list:
@@ -267,8 +275,8 @@ class Course:
         for item in self.__additional_files_data.get('results', []):
             # Check if the item is a lecture with supplementary assets
             if item.get('_class') == 'lecture':
-                id = item.get('id')
-                title = item.get('title')
+                id = item.get('id', {})
+                title = item.get('title', {})
                 assets = item.get('supplementary_assets', [])
                 for asset in assets:
                     supplementary_assets.append({

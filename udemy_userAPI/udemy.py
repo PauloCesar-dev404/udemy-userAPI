@@ -12,22 +12,23 @@ class Udemy:
     """wrapper para api de usuario da plataforma udemy"""
 
     def __init__(self):
-        """
-        cookies de seção.
-        """
         self.__headers = HEADERS_USER
         if verif_login is None:
             raise LoginException("User Not Logged!")
 
-    def my_subscribed_courses_by_plan(self) -> list[dict]:
-        """obtém os cursos que o usuário esatá inscrito, obtidos atraves de planos(assinatura)"""
+    @staticmethod
+    def my_subscribed_courses_by_plan() -> list[dict]:
+        """obtém os cursos que o usuário esatá inscrito, obtidos atraves de planos(assinatura)
+        :return:
+        """
         try:
             courses = get_courses_plan(tipe='plan')
             return courses
         except UdemyUserApiExceptions as e:
             UnhandledExceptions(e)
 
-    def my_subscribed_courses(self) -> list[dict]:
+    @staticmethod
+    def my_subscribed_courses() -> list[dict]:
         """Obtém os cursos que o usuário está inscrito, excluindo listas vazias ou nulas"""
         try:
             # Obtém os cursos

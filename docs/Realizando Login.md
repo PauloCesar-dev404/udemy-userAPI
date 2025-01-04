@@ -1,24 +1,49 @@
 # Realizando Login
-Para usar é necessário realizar login na pltaforma usando a classe `UdemyAuth`
+
+Para acessar a plataforma Udemy utilizando a classe `UdemyAuth`, existem duas formas de realizar o login:
+
+### 1. **Login Convencional (Com Email e Senha)**
+
+O login convencional exige que o usuário forneça seu e-mail e senha.
 
 ```python
-import udemy_userAPI
+from udemy_userAPI import UdemyAuth
 
-auth = udemy_userAPI.UdemyAuth()
-login = auth.login(email='',password='')
+auth = UdemyAuth()
+login = auth.login(email='', password='')  # Substitua com suas credenciais
 is_login = auth.verif_login()
 
 if is_login:
     print("Logado!")
 else:
-    print("Não estar Logado...")
-
+    print("Não está Logado...")
 ```
-## parâmetros :
-- email: email do usuário cuja teha acesso a plataforma .
-- password: a senha do usuário
 
-você pode verificar se um usuário estar logado usando `verif_login` que retorna um bool
+#### Parâmetros:
+- `email`: E-mail do usuário registrado na plataforma.
+- `password`: Senha associada ao e-mail do usuário.
 
-## outras funcioaliddes :
-você pode obter os seus cookies de seção usando `load_cookies` que retorna em uma string os cokies de seção.
+---
+
+### 2. **Login Passwordless (Sem Senha)**
+
+No login passwordless, o usuário recebe um código de verificação diretamente no e-mail para concluir o login, sem a necessidade de fornecer uma senha.
+
+```python
+from udemy_userAPI import UdemyAuth
+
+auth = UdemyAuth()
+login = auth.login_passwordless(email='', locale='en-US')  # Substitua com seu e-mail e localidade
+is_login = auth.verif_login()
+
+if is_login:
+    print("Logado!")
+else:
+    print("Não está Logado...")
+```
+
+#### Parâmetros:
+- `email`: E-mail do usuário registrado na plataforma.
+- `locale` (Opcional): Localidade preferida para receber mensagens de erro ou instruções da API no idioma desejado (por exemplo, `en-US` para inglês ou `pt-BR` para português).
+
+---
