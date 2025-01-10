@@ -1,10 +1,11 @@
 <div align="center">
     <img src="https://github.com/PauloCesar-dev404/udemy-userAPI/blob/main/assets/udemy_userAPI-logo.png" alt="udemy_userAPI-logo" width="200"/>
   
-![Versão](https://img.shields.io/badge/version-0.1-orange)
+
+![Versão](https://img.shields.io/badge/version-0.2.8-orange)
 ![Licença](https://img.shields.io/badge/license-MIT-orange)
 [![Sponsor](https://img.shields.io/badge/💲Donate-yellow)](https://apoia.se/paulocesar-dev404)
-[![Sponsor](https://img.shields.io/badge/Documentation-green)](https://github.com/PauloCesar-dev404/udemy-userAPI/wiki)
+[![Sponsor](https://img.shields.io/badge/Documentation-green)](https://github.com/PauloCesar-dev404/udemy-userAPI/blob/main/docs/iniciando.md)
 
 
 <i>A biblioteca `udemy_userAPI` facilita a análise de cursos na Udemy.
