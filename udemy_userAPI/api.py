@@ -168,7 +168,7 @@ def get_mpd_file(mpd_url):
         data = []
         # Exibe o código de status
         if response.status_code == 200:
-            return response.content
+            return response.text
         else:
             UnhandledExceptions(f"erro ao obter dados de aulas!! {response.status_code}")
     except requests.ConnectionError as e:
@@ -186,7 +186,6 @@ def get_mpd_file(mpd_url):
 def parser_chapers(results):
     """
     :param results:
-    :param tip: chaper,videos
     :return:
     """
     if not results:

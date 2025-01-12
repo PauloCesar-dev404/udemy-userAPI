@@ -9,32 +9,35 @@ from .mpd_analyzer import MPDParser
 
 class DRM:
     def __init__(self, license_token: str, get_media_sources: list):
-        self.__mpd_content = None
+        self.__mpd_file_path = None
         self.__token = license_token
         self.__dash_url = organize_streams(streams=get_media_sources).get('dash', {})
-        if not license_token or not get_media_sources or not self.__dash_url:
+        if not license_token or get_media_sources:
             return
 
     def get_key_for_lesson(self):
         """get keys for lesson"""
-        if self.__dash_url:
-            self.__mpd_content = get_mpd_file(mpd_url=self.__dash_url[0].get('src'))
-            parser = MPDParser(mpd_file_path=self.__mpd_content, is_file=True, headers=HEADERS_USER)
-            resolutions = get_highest_resolution(parser.get_all_video_resolutions())
-            parser.set_selected_resolution(resolution=resolutions)
-            init_url = parser.get_selected_video_init_url()
-            if init_url:
-                pssh = get_pssh(init_url=init_url)
-                if pssh:
-                    keys = extract(pssh=pssh, license_token=self.__token)
-                    if keys:
-                        return keys
-                    else:
-                        return None
+        try:
+            if self.__dash_url:
+                self.__mpd_file_path = get_mpd_file(mpd_url=self.__dash_url[0].get('src'))
+                parser = MPDParser(mpd_content=self.__mpd_file_path)
+                resolutions = get_highest_resolution(parser.get_all_video_resolutions())
+                parser.set_selected_resolution(resolution=resolutions)
+                init_url = parser.get_selected_video_init_url()
+                if init_url:
+                    pssh = get_pssh(init_url=init_url)
+                    if pssh:
+                        keys = extract(pssh=pssh, license_token=self.__token)
+                        if keys:
+                            return keys
+                        else:
+                            return None
+                else:
+                    return None
             else:
                 return None
-        else:
-            return None
+        except Exception as e:
+            raise Exception(f"Não foi possível obter as chaves!\n{e}")
 
 
 class Files:
@@ -44,8 +47,7 @@ class Files:
 
     @property
     def get_download_url(self) -> dict[str, Any | None] | list[dict[str, Any | None]]:
-        """obter url de download de um arquivo quando disponivel(geralemnete para arquivos esta opção é valida"""
-        da = {}
+        """Obter url de ‘download’ de um arquivo quando disponivel(geralemnete para arquivos esta opção é valida"""
         download_urls = []
         for files in self.__data:
             lecture_id = files.get('lecture_id', None)
@@ -68,6 +70,7 @@ class Files:
                     headers=HEADERS_USER)
                 if resp.status_code == 200:
                     da = json.loads(resp.text)
+                    # para cdaa dict de um fle colocar seu titulo:
                     dt_file = {'title-file': title,
                                'lecture_title': lecture_title,
                                'lecture_id': lecture_id,
@@ -84,12 +87,12 @@ class Lecture:
         self.__course_id = course_id
         self.__data = data
         self.__additional_files = additional_files
-        self.__asset = self.__data.get("asset")
+        self.__asset = self.__data.get("asset", {})
 
     @property
     def get_lecture_id(self) -> int:
         """Obtém o ID da lecture"""
-        return self.__data.get('id')
+        return self.__data.get('id', 0)
 
     @property
     def get_description(self) -> str:
@@ -138,10 +141,12 @@ class Lecture:
     def course_is_drmed(self) -> DRM:
         """verifica se a aula possui DRM se sim retorna as keys da aula...
          retorna 'kid:key' or None"""
-        if self.__asset.get('course_is_drmed', {}):
+        try:
             d = DRM(license_token=self.get_media_license_token,
                     get_media_sources=self.get_media_sources)
             return d
+        except Exception as e:
+            DeprecationWarning(e)
 
     @property
     def get_download_urls(self) -> list:
@@ -271,16 +276,15 @@ class Course:
     def get_additional_files(self) -> list[Any]:
         """Retorna a lista de arquivos adcionais de um curso."""
         supplementary_assets = []
-        files_downloader = []
         for item in self.__additional_files_data.get('results', []):
             # Check if the item is a lecture with supplementary assets
             if item.get('_class') == 'lecture':
-                id = item.get('id', {})
+                id_l = item.get('id', {})
                 title = item.get('title', {})
                 assets = item.get('supplementary_assets', [])
                 for asset in assets:
                     supplementary_assets.append({
-                        'lecture_id': id,
+                        'lecture_id': id_l,
                         'lecture_title': title,
                         'asset': asset
                     })
@@ -292,16 +296,15 @@ class Course:
     def __load_assets(self):
         """Retorna a lista de arquivos adcionais de um curso."""
         supplementary_assets = []
-        files_downloader = []
         for item in self.__additional_files_data.get('results', []):
             # Check if the item is a lecture with supplementary assets
             if item.get('_class') == 'lecture':
-                id = item.get('id')
+                id_l = item.get('id')
                 title = item.get('title')
                 assets = item.get('supplementary_assets', [])
                 for asset in assets:
                     supplementary_assets.append({
-                        'lecture_id': id,
+                        'lecture_id': id_l,
                         'lecture_title': title,
                         'asset': asset
                     })
