@@ -18,19 +18,17 @@ class UdemyAuth:
         """Autenticação na plataforma udemy de maneira segura, atencao ao limite de logins,recomendo que apos logar
         nao use novamnete o metodo login use apenas o verifcador de login para evitar bloqueios temporários..."""
         self.__cookie_dict = {}
-        # Diretório do arquivo atual
         current_directory = os.path.dirname(__file__)
-        # dir cache
         cache = '.cache'
         cache_dir = os.path.join(current_directory, cache)
         os.makedirs(cache_dir, exist_ok=True)
-        # Cria o diretório completo para a API do usuário
         self.__user_dir = os.path.join(cache_dir)
-        # Cria o caminho completo para um arquivo específico
-        file_name = '.udemy_userAPI'  # Nome do arquivo
+        file_name = '.udemy_userAPI'
+        file_credenntials = '.udemy_Credentials'
         self.__file_path = os.path.join(self.__user_dir, file_name)
+        self.__credentials_path = os.path.join(self.__user_dir, file_credenntials)
 
-    def verif_login(self):
+    def verif_login(self) ->bool:
         """verificar se o usuario estar logado."""
 
         def verif_config():
@@ -74,12 +72,14 @@ class UdemyAuth:
                     convert = json.loads(resp.text)
                     isLoggedIn = convert.get('header', {}).get('isLoggedIn', False)
                     if isLoggedIn:
-                        if isLoggedIn == True:
+                        if isLoggedIn is True:
                             return True
                         else:
                             return False
                     else:
-                        raise LoginException(f"Erro Ao obter login atualize a lib! -> {convert}")
+                        return False
+                else:
+                    raise LoginException(f"Erro Ao obter login atualize a lib! -> {json.loads(resp.text)}")
             except requests.ConnectionError as e:
                 raise UdemyUserApiExceptions(f"Erro de conexão: {e}")
             except requests.Timeout as e:
@@ -166,8 +166,7 @@ class UdemyAuth:
         except Exception as e:
             raise LoginException(e)
 
-    @property
-    def load_cookies(self) -> str:
+    def _load_cookies(self) -> str:
         """Carrega cookies e retorna-os em uma string formatada"""
         try:
             file = os.path.join(self.__file_path)

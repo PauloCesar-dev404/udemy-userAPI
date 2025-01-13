@@ -10,7 +10,7 @@ import base64
 import logging
 
 AUTH = UdemyAuth()
-COOKIES = AUTH.load_cookies
+COOKIES = AUTH._load_cookies()
 
 HEADERS_USER = {
     "accept": "*/*",
