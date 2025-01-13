@@ -1,10 +1,14 @@
 import json
 import requests
 from .exeptions import UdemyUserApiExceptions, LoginException
-from .api import HEADERS_USER
 
 
 def get_courses_plan(tipe: str) -> list:
+    from .api import HEADERS_USER
+    from .authenticate import UdemyAuth
+    auth = UdemyAuth()
+    if not auth.verif_login():
+        raise LoginException("Sessão expirada!")
     courses_data = []
     if tipe == 'default':
         response = requests.get(f"https://www.udemy.com/api-2.0/users/me/subscribed-courses/?page_size=1000"
@@ -18,8 +22,7 @@ def get_courses_plan(tipe: str) -> list:
                 courses_data.append(results)
         else:
             r = json.loads(response.text)
-            results = r.get("detail")
-            raise UdemyUserApiExceptions(f"Error obtain courses plans -> {results}")
+            raise UdemyUserApiExceptions(f"Error obtain courses 'default' -> {r}")
     elif tipe == 'plan':
         response2 = requests.get(
             url="https://www.udemy.com/api-2.0/users/me/subscription-course-enrollments/?"
@@ -38,14 +41,18 @@ def get_courses_plan(tipe: str) -> list:
                 courses_data.append(results2)
         else:
             r = json.loads(response2.text)
-            results = r.get("detail")
-            raise UdemyUserApiExceptions(f"Error obtain courses plans2 -> {results}")
+            raise UdemyUserApiExceptions(f"Error obtain courses 'plan' -> {r}")
     else:
         raise UdemyUserApiExceptions("Atenção dev! os parametros são : 'plan' e 'default'")
     return courses_data
 
 
 def get_details_courses(course_id):
+    from .api import HEADERS_USER
+    from .authenticate import UdemyAuth
+    auth = UdemyAuth()
+    if not auth.verif_login():
+        raise LoginException("Sessão expirada!")
     response = requests.get(
         f"https://www.udemy.com/api-2.0/courses/{course_id}/subscriber-curriculum-items/?"
         f"caching_intent=True&fields%5Basset%5D=title%2Cfilename%2Casset_type%2Cstatus%2Ctime_estimation%2"
@@ -64,6 +71,11 @@ def get_details_courses(course_id):
 
 
 def get_course_infor(course_id):
+    from .api import HEADERS_USER
+    from .authenticate import UdemyAuth
+    auth = UdemyAuth()
+    if not auth.verif_login():
+        raise LoginException("Sessão expirada!")
     end_point = (
         f'https://www.udemy.com/api-2.0/courses/{course_id}/?fields[course]=title,context_info,primary_category,'
         'primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,'

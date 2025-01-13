@@ -5,7 +5,7 @@ from .bultins import Course
 from .authenticate import UdemyAuth
 
 auth = UdemyAuth()
-verif_login = auth.verif_login
+verif_login = auth.verif_login()
 
 
 class Udemy:
@@ -13,8 +13,8 @@ class Udemy:
 
     def __init__(self):
         self.__headers = HEADERS_USER
-        if verif_login is None:
-            raise LoginException("User Not Logged!")
+        if not verif_login:
+            raise LoginException("Sessão expirada!")
 
     @staticmethod
     def my_subscribed_courses_by_plan() -> list[dict]:
@@ -25,7 +25,7 @@ class Udemy:
             courses = get_courses_plan(tipe='plan')
             return courses
         except UdemyUserApiExceptions as e:
-            UnhandledExceptions(e)
+            raise UnhandledExceptions(e)
 
     @staticmethod
     def my_subscribed_courses() -> list[dict]:
@@ -49,7 +49,7 @@ class Udemy:
             return all_courses
 
         except UdemyUserApiExceptions as e:
-            UnhandledExceptions(e)
+            raise UnhandledExceptions(e)
 
     @staticmethod
     def get_details_course(course_id):
@@ -59,4 +59,4 @@ class Udemy:
             b = Course(course_id=course_id, results=d)
             return b
         except UnhandledExceptions as e:
-            UnhandledExceptions(e)
+            raise UnhandledExceptions(e)

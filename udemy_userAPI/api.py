@@ -1,5 +1,5 @@
 import json
-from .exeptions import UdemyUserApiExceptions, UnhandledExceptions
+from .exeptions import UdemyUserApiExceptions, UnhandledExceptions, LoginException
 from .authenticate import UdemyAuth
 import os.path
 from pywidevine.cdm import Cdm
@@ -10,7 +10,7 @@ import base64
 import logging
 
 AUTH = UdemyAuth()
-COOKIES = AUTH._load_cookies()
+COOKIES = AUTH._load_cookies
 
 HEADERS_USER = {
     "accept": "*/*",
@@ -65,6 +65,10 @@ def read_pssh_from_bytes(bytes):
 
 
 def get_pssh(init_url):
+    from .authenticate import UdemyAuth
+    auth = UdemyAuth()
+    if not auth.verif_login():
+        raise LoginException("Sessão expirada!")
     logger.info(f"INIT URL: {init_url}")
     res = requests.get(init_url, headers=HEADERS_octet_stream)
     if not res.ok:
@@ -90,6 +94,8 @@ def get_highest_resolution(resolutions):
 
 
 def organize_streams(streams):
+    if not streams:
+        return {}
     organized_streams = {
         'dash': [],
         'hls': []
@@ -129,6 +135,10 @@ def organize_streams(streams):
 
 
 def extract(pssh, license_token):
+    from .authenticate import UdemyAuth
+    auth = UdemyAuth()
+    if not auth.verif_login():
+        raise LoginException("Sessão expirada!")
     license_url = (f"https://www.udemy.com/api-2.0/media-license-server/validate-auth-token?drm_type=widevine"
                    f"&auth_token={license_token}")
     logger.info(f"License URL: {license_url}")
@@ -138,7 +148,7 @@ def extract(pssh, license_token):
     license = requests.post(license_url, headers=HEADERS_octet_stream, data=challenge)
     try:
         str(license.content, "utf-8")
-    except:
+    except Exception as e:
         base64_license = base64.b64encode(license.content).decode()
         logger.info("[+] Acquired license sucessfully!")
     else:
@@ -162,6 +172,10 @@ def extract(pssh, license_token):
 
 
 def get_mpd_file(mpd_url):
+    from .authenticate import UdemyAuth
+    auth = UdemyAuth()
+    if not auth.verif_login():
+        raise LoginException("Sessão expirada!")
     try:
         # Faz a solicitação GET com os cabeçalhos
         response = requests.get(mpd_url, headers=HEADERS_USER)
@@ -170,22 +184,23 @@ def get_mpd_file(mpd_url):
         if response.status_code == 200:
             return response.text
         else:
-            UnhandledExceptions(f"erro ao obter dados de aulas!! {response.status_code}")
+            raise UnhandledExceptions(f"erro ao obter dados de aulas!! {response.status_code}")
     except requests.ConnectionError as e:
-        UdemyUserApiExceptions(f"Erro de conexão: {e}")
+        raise UdemyUserApiExceptions(f"Erro de conexão: {e}")
     except requests.Timeout as e:
-        UdemyUserApiExceptions(f"Tempo de requisição excedido: {e}")
+        raise UdemyUserApiExceptions(f"Tempo de requisição excedido: {e}")
     except requests.TooManyRedirects as e:
-        UdemyUserApiExceptions(f"Limite de redirecionamentos excedido: {e}")
+        raise UdemyUserApiExceptions(f"Limite de redirecionamentos excedido: {e}")
     except requests.HTTPError as e:
-        UdemyUserApiExceptions(f"Erro HTTP: {e}")
+        raise UdemyUserApiExceptions(f"Erro HTTP: {e}")
     except Exception as e:
-        UnhandledExceptions(f"Errro Ao Obter Mídias:{e}")
+        raise UnhandledExceptions(f"Errro Ao Obter Mídias:{e}")
 
 
 def parser_chapers(results):
     """
     :param results:
+    :param tip: chaper,videos
     :return:
     """
     if not results:
@@ -223,6 +238,10 @@ def parser_chapers(results):
 
 
 def get_add_files(course_id: int):
+    from .authenticate import UdemyAuth
+    auth = UdemyAuth()
+    if not auth.verif_login():
+        raise LoginException("Sessão expirada!")
     url = (f'https://www.udemy.com/api-2.0/courses/{course_id}/subscriber-curriculum-items/?page_size=2000&fields['
            f'lecture]=title,object_index,is_published,sort_order,created,asset,supplementary_assets,is_free&fields['
            f'quiz]=title,object_index,is_published,sort_order,type&fields[practice]=title,object_index,is_published,'
@@ -237,18 +256,18 @@ def get_add_files(course_id: int):
             a = json.loads(response.text)
             return a
         else:
-            UnhandledExceptions(f"erro ao obter dados de aulas!! {response.status_code}")
+            raise UnhandledExceptions(f"erro ao obter dados de aulas!! {response.status_code}")
 
     except requests.ConnectionError as e:
-        UdemyUserApiExceptions(f"Erro de conexão: {e}")
+        raise UdemyUserApiExceptions(f"Erro de conexão: {e}")
     except requests.Timeout as e:
-        UdemyUserApiExceptions(f"Tempo de requisição excedido: {e}")
+        raise UdemyUserApiExceptions(f"Tempo de requisição excedido: {e}")
     except requests.TooManyRedirects as e:
-        UdemyUserApiExceptions(f"Limite de redirecionamentos excedido: {e}")
+        raise UdemyUserApiExceptions(f"Limite de redirecionamentos excedido: {e}")
     except requests.HTTPError as e:
-        UdemyUserApiExceptions(f"Erro HTTP: {e}")
+        raise UdemyUserApiExceptions(f"Erro HTTP: {e}")
     except Exception as e:
-        UnhandledExceptions(f"Errro Ao Obter Mídias:{e}")
+        raise UnhandledExceptions(f"Errro Ao Obter Mídias:{e}")
 
 
 def get_files_aule(lecture_id_filter, data: list):
@@ -273,6 +292,10 @@ def get_links(course_id: int, id_lecture: int):
            f"media_license_token,course_is_drmed,media_sources,captions,thumbnail_sprite,slides,slide_urls,"
            f"download_urls,"
            f"external_url&q=0.3108014137011559/?fields[asset]=download_urls")
+    from .authenticate import UdemyAuth
+    auth = UdemyAuth()
+    if not auth.verif_login():
+        raise LoginException("Sessão expirada!")
     try:
         # Faz a solicitação GET com os cabeçalhos
         response = requests.get(get, headers=HEADERS_USER)
@@ -282,18 +305,18 @@ def get_links(course_id: int, id_lecture: int):
             a = json.loads(response.text)
             return a
         else:
-            UnhandledExceptions(f"erro ao obter dados de aulas!! {response.status_code}")
+            raise UnhandledExceptions(f"erro ao obter dados de aulas!! {response.status_code}")
 
     except requests.ConnectionError as e:
-        UdemyUserApiExceptions(f"Erro de conexão: {e}")
+        raise UdemyUserApiExceptions(f"Erro de conexão: {e}")
     except requests.Timeout as e:
-        UdemyUserApiExceptions(f"Tempo de requisição excedido: {e}")
+        raise UdemyUserApiExceptions(f"Tempo de requisição excedido: {e}")
     except requests.TooManyRedirects as e:
-        UdemyUserApiExceptions(f"Limite de redirecionamentos excedido: {e}")
+        raise UdemyUserApiExceptions(f"Limite de redirecionamentos excedido: {e}")
     except requests.HTTPError as e:
-        UdemyUserApiExceptions(f"Erro HTTP: {e}")
+        raise UdemyUserApiExceptions(f"Erro HTTP: {e}")
     except Exception as e:
-        UnhandledExceptions(f"Errro Ao Obter Mídias:{e}")
+        raise UnhandledExceptions(f"Errro Ao Obter Mídias:{e}")
 
 
 def remove_tag(d: str):
@@ -302,6 +325,10 @@ def remove_tag(d: str):
 
 
 def get_external_liks(course_id: int, id_lecture, asset_id):
+    from .authenticate import UdemyAuth
+    auth = UdemyAuth()
+    if not auth.verif_login():
+        raise LoginException("Sessão expirada!")
     url = (f'https://www.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/lectures/{id_lecture}/'
            f'supplementary-assets/{asset_id}/?fields[asset]=external_url')
     try:
@@ -469,14 +496,26 @@ def format_size(byte_size):
 
 
 def lecture_infor(course_id: int, id_lecture: int):
+    from .authenticate import UdemyAuth
+    auth = UdemyAuth()
+    if not auth.verif_login():
+        raise LoginException("Sessão expirada!")
     edpoint = (f"https://www.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/lectures/{id_lecture}/?"
-               f"fields[asset]=media_license_token&q=0.06925737374647678")
+               f"fields[asset]=media_license_token")
     r = requests.get(edpoint, headers=HEADERS_USER)
     if r.status_code == 200:
         return json.loads(r.text)
+    else:
+        raise ConnectionError(f"Erro ao obter informações da aula:{r.status_code}"
+                              f"\n\n"
+                              f"{r.text}")
 
 
 def assets_infor(course_id: int, id_lecture: int, assets_id: int):
+    from .authenticate import UdemyAuth
+    auth = UdemyAuth()
+    if not auth.verif_login():
+        raise LoginException("Sessão expirada!")
     endpoint = (f'https://www.udemy.com/api-2.0/assets/{assets_id}/?fields[asset]=@min,status,delayed_asset_message,'
                 f'processing_errors,body&course_id={course_id}&lecture_id={id_lecture}')
     r = requests.get(endpoint, headers=HEADERS_USER)
@@ -485,6 +524,10 @@ def assets_infor(course_id: int, id_lecture: int, assets_id: int):
         body = dt.get("body")
         title = lecture_infor(course_id=course_id, id_lecture=id_lecture).get("title")
         return save_html(body, title_lecture=title)
+    else:
+        raise ConnectionError(f"Erro ao obter informações de assets! {r.status_code}"
+                              f"\n\n"
+                              f"{r.text}")
 
 
 def save_html(body, title_lecture):
