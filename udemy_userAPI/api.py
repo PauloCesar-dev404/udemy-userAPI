@@ -66,7 +66,7 @@ def get_pssh(init_url):
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
     if not auth.verif_login():
-        raise LoginException("Sessão expirada!")
+        raise LoginException("Seção expirada!")
     res = requests.get(init_url, headers=HEADERS_octet_stream)
     if not res.ok:
         return
@@ -134,7 +134,7 @@ def extract(pssh, license_token):
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
     if not auth.verif_login():
-        raise LoginException("Sessão expirada!")
+        raise LoginException("Seção expirada!")
     license_url = (f"https://www.udemy.com/api-2.0/media-license-server/validate-auth-token?drm_type=widevine"
                    f"&auth_token={license_token}")
     session_id = cdm.open()
@@ -163,7 +163,7 @@ def get_mpd_file(mpd_url):
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
     if not auth.verif_login():
-        raise LoginException("Sessão expirada!")
+        raise LoginException("Seção expirada!")
     try:
         # Faz a solicitação GET com os cabeçalhos
         response = requests.get(mpd_url, headers=HEADERS_USER)
@@ -240,7 +240,7 @@ def get_add_files(course_id: int):
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
     if not auth.verif_login():
-        raise LoginException("Sessão expirada!")
+        raise LoginException("Seção expirada!")
     url = (f'https://www.udemy.com/api-2.0/courses/{course_id}/subscriber-curriculum-items/?page_size=2000&fields['
            f'lecture]=title,object_index,is_published,sort_order,created,asset,supplementary_assets,is_free&fields['
            f'quiz]=title,object_index,is_published,sort_order,type&fields[practice]=title,object_index,is_published,'
@@ -312,7 +312,7 @@ def get_links(course_id: int, id_lecture: int):
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
     if not auth.verif_login():
-        raise LoginException("Sessão expirada!")
+        raise LoginException("Seção expirada!")
     try:
         # Faz a solicitação GET com os cabeçalhos
         response = requests.get(get, headers=HEADERS_USER)
@@ -360,7 +360,7 @@ def get_external_liks(course_id: int, id_lecture, asset_id):
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
     if not auth.verif_login():
-        raise LoginException("Sessão expirada!")
+        raise LoginException("Seção expirada!")
     url = (f'https://www.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/lectures/{id_lecture}/'
            f'supplementary-assets/{asset_id}/?fields[asset]=external_url')
     try:
@@ -561,7 +561,7 @@ def lecture_infor(course_id: int, id_lecture: int):
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
     if not auth.verif_login():
-        raise LoginException("Sessão expirada!")
+        raise LoginException("Seção expirada!")
     edpoint = (f"https://www.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/lectures/{id_lecture}/?"
                f"fields[asset]=media_license_token")
     r = requests.get(edpoint, headers=HEADERS_USER)
@@ -592,7 +592,7 @@ def assets_infor(course_id: int, id_lecture: int, assets_id: int):
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
     if not auth.verif_login():
-        raise LoginException("Sessão expirada!")
+        raise LoginException("Seção expirada!")
     endpoint = (f'https://www.udemy.com/api-2.0/assets/{assets_id}/?fields[asset]=@min,status,delayed_asset_message,'
                 f'processing_errors,body&course_id={course_id}&lecture_id={id_lecture}')
     r = requests.get(endpoint, headers=HEADERS_USER)

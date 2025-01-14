@@ -1,4 +1,4 @@
-__version__ = '0.3.2'
+__version__ = '0.3.4'
 __lib_name__ = 'udemy_userAPI'  # local name
 __repo_name__ = 'udemy-userAPI'
 __autor__ = 'PauloCesar-dev404'

@@ -88,13 +88,10 @@ class UdemyAuth:
                     else:
                         return False
                 else:
-                    if (('upstream connect error or disconnect/reset before headers.'
-                         ' reset reason: remote connection'
-                         ' failure, transport failure reason:'
-                         ' delayed connect error: 111')
-                            in resp.text):
+                    if 'error: 111' in resp.text:
                         raise Upstreamconnecterror(message='Erro no servidor remoto!')
-                    raise LoginException(f"Erro Ao obter login atualize a lib! -> {resp.text}")
+                    else:
+                        raise LoginException(f"Erro Ao obter login : {resp.text}")
             except requests.ConnectionError as e:
                 raise UdemyUserApiExceptions(f"Erro de conexão: {e}")
             except requests.Timeout as e:
@@ -119,7 +116,7 @@ class UdemyAuth:
         """
         try:
             if self.verif_login():
-                raise UserWarning("Atenção, você já possui uma sessão válida!")
+                raise UserWarning("Atenção, você já possui uma seção válida!")
             s = cloudscraper.create_scraper()
             r = s.get(
                 "https://www.udemy.com/join/signup-popup/",
@@ -225,7 +222,7 @@ class UdemyAuth:
         from .api import J
         try:
             if self.verif_login():
-                raise UserWarning("Atenção, você já possui uma sessão válida!")
+                raise UserWarning("Atenção, você já possui uma seção válida!")
             # Inicializa uma sessão com proteção contra Cloudflare
             session = cloudscraper.create_scraper()
 

@@ -12,7 +12,7 @@ def get_courses_plan(tipe: str) -> list:
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
     if not auth.verif_login():
-        raise LoginException("Sessão expirada!")
+        raise LoginException("Seção expirada!")
     courses_data = []
     if tipe == 'default':
         response = requests.get(f"https://www.udemy.com/api-2.0/users/me/subscribed-courses/?page_size=1000"
@@ -69,7 +69,7 @@ def get_details_courses(course_id):
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
     if not auth.verif_login():
-        raise LoginException("Sessão expirada!")
+        raise LoginException("Seção expirada!")
     response = requests.get(
         f"https://www.udemy.com/api-2.0/courses/{course_id}/subscriber-curriculum-items/?"
         f"caching_intent=True&fields%5Basset%5D=title%2Cfilename%2Casset_type%2Cstatus%2Ctime_estimation%2"
@@ -105,7 +105,7 @@ def get_course_infor(course_id):
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
     if not auth.verif_login():
-        raise LoginException("Sessão expirada!")
+        raise LoginException("Seção expirada!")
     end_point = (
         f'https://www.udemy.com/api-2.0/courses/{course_id}/?fields[course]=title,context_info,primary_category,'
         'primary_subcategory,avg_rating_recent,visible_instructors,locale,estimated_content_length,'

@@ -76,7 +76,7 @@ class Files:
         from .authenticate import UdemyAuth
         auth = UdemyAuth()
         if not auth.verif_login():
-            raise LoginException("Sessão expirada!")
+            raise LoginException("Seção expirada!")
         download_urls = []
         for files in self.__data:
             lecture_id = files.get('lecture_id', None)
