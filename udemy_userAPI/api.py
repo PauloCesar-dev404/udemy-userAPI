@@ -1,4 +1,8 @@
 import json
+import hashlib
+import hmac
+import math
+from datetime import datetime
 from .exeptions import UdemyUserApiExceptions, UnhandledExceptions, LoginException
 from .authenticate import UdemyAuth
 import os.path
@@ -7,10 +11,10 @@ from pywidevine.device import Device
 from pywidevine.pssh import PSSH
 import requests
 import base64
-import logging
+
 
 AUTH = UdemyAuth()
-COOKIES = AUTH._load_cookies
+COOKIES = AUTH._load_cookies()
 
 HEADERS_USER = {
     "accept": "*/*",
@@ -44,23 +48,17 @@ HEADERS_octet_stream = {
     'accept-language': 'en-US,en;q=0.9',
 }
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
-# Obtém o diretório do arquivo em execução
 locate = os.path.dirname(__file__)
-# Cria o caminho para o arquivo bin.wvd na subpasta bin
-binn = 'bin.py'
 WVD_FILE_PATH = os.path.join(locate, 'mpd_analyzer', 'bin.wvd')
-
 device = Device.load(WVD_FILE_PATH)
 cdm = Cdm.from_device(device)
 
 
-def read_pssh_from_bytes(bytes):
-    pssh_offset = bytes.rfind(b'pssh')
+def read_pssh_from_bytes(bytess):
+    pssh_offset = bytess.rfind(b'pssh')
     _start = pssh_offset - 4
-    _end = pssh_offset - 4 + bytes[pssh_offset - 1]
-    pssh = bytes[_start:_end]
+    _end = pssh_offset - 4 + bytess[pssh_offset - 1]
+    pssh = bytess[_start:_end]
     return pssh
 
 
@@ -69,10 +67,8 @@ def get_pssh(init_url):
     auth = UdemyAuth()
     if not auth.verif_login():
         raise LoginException("Sessão expirada!")
-    logger.info(f"INIT URL: {init_url}")
     res = requests.get(init_url, headers=HEADERS_octet_stream)
     if not res.ok:
-        logger.exception("Could not download init segment: " + res.text)
         return
     pssh = read_pssh_from_bytes(res.content)
     return base64.b64encode(pssh).decode("utf-8")
@@ -141,32 +137,24 @@ def extract(pssh, license_token):
         raise LoginException("Sessão expirada!")
     license_url = (f"https://www.udemy.com/api-2.0/media-license-server/validate-auth-token?drm_type=widevine"
                    f"&auth_token={license_token}")
-    logger.info(f"License URL: {license_url}")
     session_id = cdm.open()
     challenge = cdm.get_license_challenge(session_id, PSSH(pssh))
-    logger.info("Sending license request now")
-    license = requests.post(license_url, headers=HEADERS_octet_stream, data=challenge)
+    license_file = requests.post(license_url, headers=HEADERS_octet_stream, data=challenge)
     try:
-        str(license.content, "utf-8")
+        str(license_file.content, "utf-8")
     except Exception as e:
-        base64_license = base64.b64encode(license.content).decode()
-        logger.info("[+] Acquired license sucessfully!")
+        base64.b64encode(license_file.content).decode()
     else:
-        if "CAIS" not in license.text:
-            logger.exception("[-] Couldn't to get license: [{}]\n{}".format(license.status_code, license.text))
+        if "CAIS" not in license_file.text:
             return
-
-    logger.info("Trying to get keys now")
-    cdm.parse_license(session_id, license.content)
+    cdm.parse_license(session_id, license_file.content)
     final_keys = ""
     for key in cdm.get_keys(session_id):
-        logger.info(f"[+] Keys: [{key.type}] - {key.kid.hex}:{key.key.hex()}")
         if key.type == "CONTENT":
             final_keys += f"{key.kid.hex}:{key.key.hex()}"
     cdm.close(session_id)
 
     if final_keys == "":
-        logger.exception("Keys were not extracted sucessfully.")
         return
     return final_keys.strip()
 
@@ -179,7 +167,6 @@ def get_mpd_file(mpd_url):
     try:
         # Faz a solicitação GET com os cabeçalhos
         response = requests.get(mpd_url, headers=HEADERS_USER)
-        data = []
         # Exibe o código de status
         if response.status_code == 200:
             return response.text
@@ -200,7 +187,6 @@ def get_mpd_file(mpd_url):
 def parser_chapers(results):
     """
     :param results:
-    :param tip: chaper,videos
     :return:
     """
     if not results:
@@ -238,6 +224,19 @@ def parser_chapers(results):
 
 
 def get_add_files(course_id: int):
+    """
+    Obtém arquivos adicionais de um curso.
+
+    Args:
+        course_id (int): ID do curso.
+
+    Returns:
+        dict: Um dicionário contendo os arquivos adicionais do curso.
+
+    Raises: LoginException: Se a sessão estiver expirada. UdemyUserApiExceptions: Se houver erro de conexão,
+    tempo de requisição excedido, limite de redirecionamentos excedido ou erro HTTP. UnhandledExceptions: Se houver
+    erro ao obter dados das aulas.
+    """
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
     if not auth.verif_login():
@@ -256,7 +255,7 @@ def get_add_files(course_id: int):
             a = json.loads(response.text)
             return a
         else:
-            raise UnhandledExceptions(f"erro ao obter dados de aulas!! {response.status_code}")
+            raise UnhandledExceptions(f"Erro ao obter dados de aulas! Código de status: {response.status_code}")
 
     except requests.ConnectionError as e:
         raise UdemyUserApiExceptions(f"Erro de conexão: {e}")
@@ -267,12 +266,21 @@ def get_add_files(course_id: int):
     except requests.HTTPError as e:
         raise UdemyUserApiExceptions(f"Erro HTTP: {e}")
     except Exception as e:
-        raise UnhandledExceptions(f"Errro Ao Obter Mídias:{e}")
+        raise UnhandledExceptions(f"Erro ao obter mídias: {e}")
 
 
 def get_files_aule(lecture_id_filter, data: list):
+    """
+    Filtra e obtém arquivos adicionais para uma aula específica.
+
+    Args:
+        lecture_id_filter: ID da aula a ser filtrada.
+        data (list): Lista de dados contendo informações dos arquivos.
+
+    Returns:
+        list: Lista de arquivos filtrados.
+    """
     files = []
-    # print(f'DEBUG:\n\n{data}')
     for files_data in data:
         lecture_id = files_data.get('lecture_id')
         if lecture_id == lecture_id_filter:
@@ -282,10 +290,19 @@ def get_files_aule(lecture_id_filter, data: list):
 
 def get_links(course_id: int, id_lecture: int):
     """
-        :param course_id: id do curso
-        :param id_lecture: id da aula
-        :return: dict
-        """
+    Obtém links e informações de uma aula específica.
+
+    Args:
+        course_id (int): ID do curso.
+        id_lecture (int): ID da aula.
+
+    Returns:
+        dict: Um dicionário contendo links e informações da aula.
+
+    Raises: LoginException: Se a sessão estiver expirada. UdemyUserApiExceptions: Se houver erro de conexão,
+    tempo de requisição excedido, limite de redirecionamentos excedido ou erro HTTP. UnhandledExceptions: Se houver
+    erro ao obter dados das aulas.
+    """
     get = (f"https://www.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/lectures/{id_lecture}/?"
            f"fields[lecture]"
            f"=asset,description,download_url,is_free,last_watched_second&fields[asset]=asset_type,length,"
@@ -305,7 +322,7 @@ def get_links(course_id: int, id_lecture: int):
             a = json.loads(response.text)
             return a
         else:
-            raise UnhandledExceptions(f"erro ao obter dados de aulas!! {response.status_code}")
+            raise UnhandledExceptions(f"Erro ao obter dados de aulas! Código de status: {response.status_code}")
 
     except requests.ConnectionError as e:
         raise UdemyUserApiExceptions(f"Erro de conexão: {e}")
@@ -316,7 +333,7 @@ def get_links(course_id: int, id_lecture: int):
     except requests.HTTPError as e:
         raise UdemyUserApiExceptions(f"Erro HTTP: {e}")
     except Exception as e:
-        raise UnhandledExceptions(f"Errro Ao Obter Mídias:{e}")
+        raise UnhandledExceptions(f"Erro ao obter mídias: {e}")
 
 
 def remove_tag(d: str):
@@ -325,6 +342,21 @@ def remove_tag(d: str):
 
 
 def get_external_liks(course_id: int, id_lecture, asset_id):
+    """
+    Obtém links externos para um asset específico de uma aula.
+
+    Args:
+        course_id (int): ID do curso.
+        id_lecture: ID da aula.
+        asset_id: ID do asset.
+
+    Returns:
+        dict: Um dicionário contendo os links externos do asset.
+
+    Raises: LoginException: Se a sessão estiver expirada. UdemyUserApiExceptions: Se houver erro de conexão,
+    tempo de requisição excedido, limite de redirecionamentos excedido ou erro HTTP. UnhandledExceptions: Se houver
+    erro ao obter dados das aulas.
+    """
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
     if not auth.verif_login():
@@ -340,25 +372,32 @@ def get_external_liks(course_id: int, id_lecture, asset_id):
             a = json.loads(response.text)
             return a
         else:
-            UnhandledExceptions(f"erro ao obter dados de aulas!! {response.status_code}")
+            raise UnhandledExceptions(f"Erro ao obter dados de aulas! Código de status: {response.status_code}")
 
     except requests.ConnectionError as e:
-        UdemyUserApiExceptions(f"Erro de conexão: {e}")
+        raise UdemyUserApiExceptions(f"Erro de conexão: {e}")
     except requests.Timeout as e:
-        UdemyUserApiExceptions(f"Tempo de requisição excedido: {e}")
+        raise UdemyUserApiExceptions(f"Tempo de requisição excedido: {e}")
     except requests.TooManyRedirects as e:
-        UdemyUserApiExceptions(f"Limite de redirecionamentos excedido: {e}")
+        raise UdemyUserApiExceptions(f"Limite de redirecionamentos excedido: {e}")
     except requests.HTTPError as e:
-        UdemyUserApiExceptions(f"Erro HTTP: {e}")
+        raise UdemyUserApiExceptions(f"Erro HTTP: {e}")
     except Exception as e:
-        UnhandledExceptions(f"Errro Ao Obter Mídias:{e}")
+        raise UnhandledExceptions(f"Erro ao obter mídias: {e}")
 
 
 def extract_files(supplementary_assets: list) -> list:
-    """Obtém o ID da lecture, o ID do asset, o asset_type e o filename."""
+    """
+    Obtém o ID da lecture, o ID do asset, o asset_type e o filename.
+
+    Args:
+        supplementary_assets (list): Lista de assets suplementares.
+
+    Returns:
+        list: Lista de dicionários contendo informações dos assets.
+    """
     files = []
     for item in supplementary_assets:
-        # print(f'DEBUG files:\n{item}\n\n')
         lecture_title = item.get('lecture_title')
         lecture_id = item.get('lecture_id')
         asset = item.get('asset', {})
@@ -380,6 +419,15 @@ def extract_files(supplementary_assets: list) -> list:
 
 
 def extract_course_data(course_dict) -> dict:
+    """
+    Extrai dados do curso de um dicionário de informações do curso.
+
+    Args:
+        course_dict (dict): Dicionário contendo dados do curso.
+
+    Returns:
+        dict: Dicionário contendo dados extraídos do curso.
+    """
     # Extrair informações principais
     course_id = course_dict.get('id')
     title = course_dict.get('title')
@@ -496,6 +544,20 @@ def format_size(byte_size):
 
 
 def lecture_infor(course_id: int, id_lecture: int):
+    """
+    Obtém informações de uma aula específica.
+
+    Args:
+        course_id (int): ID do curso.
+        id_lecture (int): ID da aula.
+
+    Returns:
+        dict: Um dicionário contendo as informações da aula.
+
+    Raises:
+        LoginException: Se a sessão estiver expirada.
+        ConnectionError: Se houver erro ao obter as informações da aula.
+    """
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
     if not auth.verif_login():
@@ -512,6 +574,21 @@ def lecture_infor(course_id: int, id_lecture: int):
 
 
 def assets_infor(course_id: int, id_lecture: int, assets_id: int):
+    """
+    Obtém informações de um asset específico de uma aula.
+
+    Args:
+        course_id (int): ID do curso.
+        id_lecture (int): ID da aula.
+        assets_id (int): ID do asset.
+
+    Returns:
+        str: Conteúdo HTML do asset.
+
+    Raises:
+        LoginException: Se a sessão estiver expirada.
+        ConnectionError: Se houver erro ao obter as informações do asset.
+    """
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
     if not auth.verif_login():
@@ -543,3 +620,72 @@ def save_html(body, title_lecture):
 </html>"""
 
     return html_content
+
+
+def J(e, t):
+    """
+    Gera um identificador único baseado na data atual e nas funções X e ee.
+
+    Args:
+        e (str): Um identificador.
+        t (str): Um tipo de identificador.
+
+    Returns:
+        str: Um identificador único.
+    """
+    r = datetime.now()
+    s = r.isoformat()[:10]
+    return s + X(e, s, t)
+
+
+def X(e, t, r):
+    """
+    Gera um código HMAC-SHA256 baseado nos parâmetros fornecidos.
+
+    Args:
+        e (str): Um identificador.
+        t (str): Um timestamp.
+        r (str): Um identificador de tipo.
+
+    Returns:
+        str: Um código gerado.
+    """
+    s = 0
+    while True:
+        o = ee(s)
+        a = hmac.new(r.encode(), (e + t + o).encode(), hashlib.sha256).digest()
+        if te(16, a):
+            return o
+        s += 1
+
+
+def ee(e):
+    """
+    Gera uma string baseada no valor do contador.
+
+    Args:
+        e (int): Um valor do contador.
+
+    Returns:
+        str: Uma string gerada.
+    """
+    if e < 0:
+        return ""
+    return ee(e // 26 - 1) + chr(65 + e % 26)
+
+
+def te(e, t):
+    """
+    Verifica se a sequência de bits gerada começa com um número específico de zeros.
+
+    Args:
+        e (int): O número de zeros.
+        t (bytes): A sequência de bytes.
+
+    Returns:
+        bool: True se a sequência começa com o número especificado de zeros, False caso contrário.
+    """
+    r = math.ceil(e / 8)
+    s = t[:r]
+    o = ''.join(format(byte, '08b') for byte in s)
+    return o.startswith('0' * e)

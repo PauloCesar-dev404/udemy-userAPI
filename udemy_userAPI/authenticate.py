@@ -2,12 +2,8 @@ import json
 import os
 import pickle
 import traceback
-import hashlib
-import hmac
-import math
-from datetime import datetime
 import requests
-from .exeptions import UnhandledExceptions, UdemyUserApiExceptions, LoginException
+from .exeptions import UnhandledExceptions, UdemyUserApiExceptions, LoginException, Upstreamconnecterror
 import cloudscraper
 
 DEBUG = False
@@ -15,8 +11,11 @@ DEBUG = False
 
 class UdemyAuth:
     def __init__(self):
-        """Autenticação na plataforma udemy de maneira segura, atencao ao limite de logins,recomendo que apos logar
-        nao use novamnete o metodo login use apenas o verifcador de login para evitar bloqueios temporários..."""
+        """
+        Autenticação na plataforma Udemy de maneira segura.
+        Atenção ao limite de logins. Recomendo que após logar não use novamente o método login,
+        use apenas o verificador de login para evitar bloqueios temporários.
+        """
         self.__cookie_dict = {}
         current_directory = os.path.dirname(__file__)
         cache = '.cache'
@@ -28,11 +27,21 @@ class UdemyAuth:
         self.__file_path = os.path.join(self.__user_dir, file_name)
         self.__credentials_path = os.path.join(self.__user_dir, file_credenntials)
 
-    def verif_login(self) ->bool:
-        """verificar se o usuario estar logado."""
+    def verif_login(self) -> bool:
+        """
+        Verifica se o usuário está logado.
+
+        Returns:
+            bool: True se o usuário estiver logado, False caso contrário.
+        """
 
         def verif_config():
-            # Verificar se o arquivo .userLogin existe e carregar cookies se existir
+            """
+            Verifica se o arquivo .userLogin existe e carrega cookies se existir.
+
+            Returns:
+                str: Cookies em formato de string ou False se não existir.
+            """
             try:
                 with open(fr'{self.__file_path}', 'rb') as f:
                     cookies = pickle.load(f)
@@ -79,7 +88,13 @@ class UdemyAuth:
                     else:
                         return False
                 else:
-                    raise LoginException(f"Erro Ao obter login atualize a lib! -> {json.loads(resp.text)}")
+                    if (('upstream connect error or disconnect/reset before headers.'
+                         ' reset reason: remote connection'
+                         ' failure, transport failure reason:'
+                         ' delayed connect error: 111')
+                            in resp.text):
+                        raise Upstreamconnecterror(message='Erro no servidor remoto!')
+                    raise LoginException(f"Erro Ao obter login atualize a lib! -> {resp.text}")
             except requests.ConnectionError as e:
                 raise UdemyUserApiExceptions(f"Erro de conexão: {e}")
             except requests.Timeout as e:
@@ -93,37 +108,38 @@ class UdemyAuth:
         else:
             return False
 
-    def login(self, email: str, password: str):
-        """efetuar login na udemy"""
-        try:
-            # Inicializa uma sessão usando cloudscraper para contornar a proteção Cloudflare
-            s = cloudscraper.create_scraper()
+    def login(self, email: str, password: str, locale: str = 'pt_BR'):
+        """
+        Efetua login na Udemy.
 
-            # Faz uma requisição GET à página de inscrição para obter o token CSRF
+        Args:
+            email (str): Email do usuário.
+            password (str): Senha do usuário.
+            locale (str): Localidade. Padrão é 'pt_BR'.
+        """
+        try:
+            if self.verif_login():
+                raise UserWarning("Atenção, você já possui uma sessão válida!")
+            s = cloudscraper.create_scraper()
             r = s.get(
                 "https://www.udemy.com/join/signup-popup/",
                 headers={"User-Agent": "okhttp/4.9.2 UdemyAndroid 8.9.2(499) (phone)"},
             )
-
-            # Extrai o token CSRF dos cookies
             csrf_token = r.cookies["csrftoken"]
-
-            # Prepara os dados para o login
             data = {
                 "csrfmiddlewaretoken": csrf_token,
-                "locale": "pt_BR",
+                "locale": locale,
                 "email": email,
                 "password": password,
             }
-
-            # Atualiza os cookies e cabeçalhos da sessão
             s.cookies.update(r.cookies)
             s.headers.update(
                 {
                     "User-Agent": "okhttp/4.9.2 UdemyAndroid 8.9.2(499) (phone)",
                     "Accept": "application/json, text/plain, */*",
                     "Accept-Language": "en-GB,en;q=0.5",
-                    "Referer": "https://www.udemy.com/join/login-popup/?locale=en_US&response_type=html&next=https%3A%2F"
+                    "Referer": "https://www.udemy.com/join/login-popup/?locale=en_US&response_type="
+                               "html&next=https%3A%2F"
                                "%2Fwww.udemy.com%2F",
                     "Origin": "https://www.udemy.com",
                     "DNT": "1",
@@ -199,11 +215,17 @@ class UdemyAuth:
         código de verificação por e-mail ao usuário. Após inserir o código recebido,
         o login é concluído.
 
-        :param email: Email do usuário.
-        :param locale: Localização do usuário (recomendado para receber mensagens no idioma local).
-        :raises LoginException: Em caso de falha no processo de login.
+        Args:
+            email (str): Email do usuário.
+            locale (str): Localização do usuário (recomendado para receber mensagens no idioma local).
+
+        Raises:
+            LoginException: Em caso de falha no processo de login.
         """
+        from .api import J
         try:
+            if self.verif_login():
+                raise UserWarning("Atenção, você já possui uma sessão válida!")
             # Inicializa uma sessão com proteção contra Cloudflare
             session = cloudscraper.create_scraper()
 
@@ -278,7 +300,7 @@ class UdemyAuth:
                         elif error_code == '1330':
                             raise LoginException(error_message)
                         elif error_code == '1149':
-                            LoginException(f"Erro interno ao enviar os dados veja os detalhes: '{error_message}'")
+                            raise LoginException(f"Erro interno ao enviar os dados veja os detalhes: '{error_message}'")
                     raise LoginException(response.text)
                 break
         except Exception as e:
@@ -287,32 +309,3 @@ class UdemyAuth:
             else:
                 error_details = str(e)
             raise LoginException(error_details)
-
-
-def J(e, t):
-    r = datetime.now()
-    s = r.isoformat()[:10]
-    return s + X(e, s, t)
-
-
-def X(e, t, r):
-    s = 0
-    while True:
-        o = ee(s)
-        a = hmac.new(r.encode(), (e + t + o).encode(), hashlib.sha256).digest()
-        if te(16, a):
-            return o
-        s += 1
-
-
-def ee(e):
-    if e < 0:
-        return ""
-    return ee(e // 26 - 1) + chr(65 + e % 26)
-
-
-def te(e, t):
-    r = math.ceil(e / 8)
-    s = t[:r]
-    o = ''.join(format(byte, '08b') for byte in s)
-    return o.startswith('0' * e)

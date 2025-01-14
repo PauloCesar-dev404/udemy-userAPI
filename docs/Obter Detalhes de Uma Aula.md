@@ -51,7 +51,7 @@ if is_login:
     print(f"Token de Licença de Mídia: {lecture_infor.get_media_license_token}")
 
     # Verifica se a aula está protegida por DRM e exibe a chave, se aplicável
-    if lecture_infor.course_is_drmed():
+    if lecture_infor.course_is_drmed().get_key_for_lesson():
         print(f"Esta aula possui DRM key: {lecture_infor.course_is_drmed().get_key_for_lesson()}")
 
 else:

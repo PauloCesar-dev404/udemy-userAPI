@@ -4,6 +4,10 @@ from .exeptions import UdemyUserApiExceptions, LoginException
 
 
 def get_courses_plan(tipe: str) -> list:
+    """ Obtém uma lista de cursos com base no tipo de plano.
+
+    Args: tipe (str): Tipo de plano ('default' ou 'plan'). Returns: list: Lista de cursos. Raises: LoginException: Se
+    a sessão estiver expirada. UdemyUserApiExceptions: Se houver erro ao obter os cursos."""
     from .api import HEADERS_USER
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
@@ -48,6 +52,19 @@ def get_courses_plan(tipe: str) -> list:
 
 
 def get_details_courses(course_id):
+    """
+    Obtém detalhes de um curso específico.
+
+    Args:
+        course_id (int): ID do curso.
+
+    Returns:
+        dict: Dicionário contendo os detalhes do curso.
+
+    Raises:
+        LoginException: Se a sessão estiver expirada.
+        UdemyUserApiExceptions: Se houver erro ao obter os detalhes do curso.
+    """
     from .api import HEADERS_USER
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
@@ -67,10 +84,23 @@ def get_details_courses(course_id):
         resposta = json.loads(response.text)
         return resposta
     else:
-        UdemyUserApiExceptions(f"erro ao obter detalhes do curso! {response.status_code}")
+        raise UdemyUserApiExceptions(f"Erro ao obter detalhes do curso! Código de status: {response.status_code}")
 
 
 def get_course_infor(course_id):
+    """
+    Obtém informações de um curso específico.
+
+    Args:
+        course_id (int): ID do curso.
+
+    Returns:
+        dict: Dicionário contendo as informações do curso.
+
+    Raises:
+        LoginException: Se a sessão estiver expirada.
+        UdemyUserApiExceptions: Se houver erro ao obter as informações do curso.
+    """
     from .api import HEADERS_USER
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
@@ -84,4 +114,4 @@ def get_course_infor(course_id):
     if response.status_code == 200:
         return json.loads(response.text)
     else:
-        raise UdemyUserApiExceptions("erro ao obter informações do curso!")
+        raise UdemyUserApiExceptions("Erro ao obter informações do curso!")
