@@ -20,7 +20,7 @@ class Udemy:
         """
         self.__headers = HEADERS_USER
         if not verif_login:
-            raise LoginException("Seção expirada!")
+            raise LoginException("Sessão expirada!")
 
     @staticmethod
     def my_subscribed_courses_by_plan() -> list[dict]:

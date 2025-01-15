@@ -2,7 +2,7 @@
     <img src="https://github.com/PauloCesar-dev404/udemy-userAPI/blob/main/assets/udemy_userAPI-logo.png" alt="udemy_userAPI-logo" width="200"/>
   
 
-![Versão](https://img.shields.io/badge/version-0.3.4-orange)
+![Versão](https://img.shields.io/badge/version-0.3.5-orange)
 ![Licença](https://img.shields.io/badge/license-MIT-orange)
 [![Sponsor](https://img.shields.io/badge/💲Donate-yellow)](https://paulocesar-dev404.github.io/me-apoiando-online/)
 [![Sponsor](https://img.shields.io/badge/Documentation-green)](https://github.com/PauloCesar-dev404/udemy-userAPI/blob/main/docs/iniciando.md)

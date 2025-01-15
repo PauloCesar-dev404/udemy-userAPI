@@ -76,7 +76,7 @@ class Files:
         from .authenticate import UdemyAuth
         auth = UdemyAuth()
         if not auth.verif_login():
-            raise LoginException("Seção expirada!")
+            raise LoginException("Sessão expirada!")
         download_urls = []
         for files in self.__data:
             lecture_id = files.get('lecture_id', None)
@@ -418,7 +418,7 @@ class Course:
 
         for chapter in self.__data.values():
             for index, video in enumerate(chapter.get('videos_in_chapter', [])):
-                section = f"{chapter.get('title_chapter')}"  # Adicionar numeração da seção
+                section = f"{chapter.get('title_chapter')}"  # Adicionar numeração da Sessão
                 title = video.get('video_title')
                 id_lecture = video.get('lecture_id')
                 id_asset = video.get('asset_id')
@@ -430,7 +430,7 @@ class Course:
                     'section_order': section_order
                 }
                 videos.append(dt)
-            section_order += 1  # Incrementar o número da seção após processar os vídeos do capítulo
+            section_order += 1  # Incrementar o número da Sessão após processar os vídeos do capítulo
         return videos
 
     def get_details_lecture(self, lecture_id: int) -> Lecture:
