@@ -35,7 +35,7 @@ else:
 ```
 
 # Explicação
-- Autenticação: Antes de acessar qualquer dado, é necessário garantir que o usuário está autenticado com sucesso. Isso é feito por `uth.verif_login`.
+- Autenticação: Antes de acessar qualquer dado, é necessário garantir que o usuário está autenticado com sucesso. Isso é feito por `verif_login()`.
 `udemy.my_subscribed_courses_by_plan`: Retorna a lista de cursos aos quais o usuário tem acesso via um plano de assinatura.
 `udemy.my_subscribed_courses`: Retorna a lista de cursos adquiridos ou cursos gratuitos aos quais o usuário se inscreveu.
 
