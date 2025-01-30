@@ -1,11 +1,8 @@
-import json
 from typing import Any
-import requests
-from .api import get_links, remove_tag, parser_chapers, extract_files, HEADERS_USER, assets_infor, get_add_files, \
-    get_files_aule, get_external_liks, extract, get_pssh, organize_streams, get_mpd_file, get_highest_resolution
-from .sections import get_course_infor
-from .mpd_analyzer import MPDParser
+from .api import *
 from .exeptions import LoginException
+from .mpd_analyzer import MPDParser
+from .sections import get_course_infor
 
 
 class DRM:
@@ -108,6 +105,62 @@ class Files:
                     download_urls.append(dt_file)
         return download_urls
 
+class Quiz:
+    """Representa um quiz.
+    """
+
+    def __init__(self, quiz_data: dict):
+        """
+        Inicializa uma instância de Quiz.
+
+        Args:
+            quiz_data (dict): Dados do quiz.
+        """
+        self._data = quiz_data
+
+    @property
+    def id(self) -> int:
+        """Retorna o ID do quiz."""
+        return self._data.get('id', 0)
+
+    @property
+    def title(self) -> str:
+        """Retorna o título do quiz."""
+        return self._data.get('title', '')
+
+    @property
+    def type_quiz(self) -> str:
+        """Retorna o tipo de quiz (exame ou prática)."""
+        return self._data.get('type', '')
+
+    @property
+    def description(self) -> str:
+        """Retorna a descrição do quiz."""
+        return remove_tag(self._data.get('description', ''))
+
+    @property
+    def duration(self) -> int:
+        """Retorna a duração do quiz em minutos, se aplicável."""
+        duration: int = self._data.get('duration', 1)
+        if duration > 1:
+            return int(duration / 60)
+        else:
+            return 0
+
+    @property
+    def pass_percent(self) -> int:
+        """Retorna a porcentagem necessária para passar."""
+        return self._data.get('pass_percent', 0)
+
+    @property
+    def num_assessments(self) -> int:
+        """Retorna o número de perguntas do quiz."""
+        return self._data.get('num_assessments', 0)
+
+    def content(self) -> dict:
+        """Obtém o conteúdo do quiz."""
+        htmls = get_quizzes(lecture_id=self.id)
+        return htmls
 
 class Lecture:
     """Cria objetos aula (lecture) do curso e extrai os dados."""
@@ -166,8 +219,8 @@ class Lecture:
         """
         thumbnail_sprite = self.__asset.get('thumbnail_sprite', {})
         return {
-            'thumbnail_vtt_url': thumbnail_sprite.get('vtt_url'),
-            'thumbnail_img_url': thumbnail_sprite.get('img_url')
+            'thumbnail_vtt_url': thumbnail_sprite.get('vtt_url',[]),
+            'thumbnail_img_url': thumbnail_sprite.get('img_url',[])
         }
 
     @property
@@ -178,7 +231,7 @@ class Lecture:
         Returns:
             str: O tipo de asset.
         """
-        return self.__asset.get('asset_type', 'Undefined')
+        return self.__asset.get('asset_type', '') or self.__data.get('_class','').replace('quiz','Quiz')
 
     @property
     def get_media_sources(self) -> list:
@@ -188,7 +241,7 @@ class Lecture:
         Returns:
             list: Uma lista contendo as fontes de mídia.
         """
-        return self.__asset.get('media_sources')
+        return self.__asset.get('media_sources',[])
 
     @property
     def get_captions(self) -> list:
@@ -198,7 +251,7 @@ class Lecture:
         Returns:
             list: Uma lista contendo as legendas.
         """
-        return self.__asset.get('captions')
+        return self.__asset.get('captions',[])
 
     @property
     def get_external_url(self) -> list:
@@ -208,7 +261,7 @@ class Lecture:
         Returns:
             list: Uma lista contendo os links externos.
         """
-        return self.__asset.get('external_url')
+        return self.__asset.get('external_url',[])
 
     @property
     def get_media_license_token(self) -> str:
@@ -218,7 +271,7 @@ class Lecture:
         Returns:
             str: O token de acesso à aula.
         """
-        return self.__asset.get('media_license_token')
+        return self.__asset.get('media_license_token','')
 
     def course_is_drmed(self) -> DRM:
         """
@@ -227,12 +280,19 @@ class Lecture:
         Returns:
             DRM: O objeto DRM contendo as keys da aula ou None.
         """
-        try:
-            d = DRM(license_token=self.get_media_license_token,
+        d = DRM(license_token=self.get_media_license_token,
                     get_media_sources=self.get_media_sources)
-            return d
-        except Exception as e:
-            DeprecationWarning(e)
+        return d
+
+    def quiz_object(self) ->Quiz:
+        """se for um quiz ele retorna um objeto Quiz"""
+        if self.get_asset_type.lower() == 'quiz':
+            q =Quiz(get_assessments(lecture_id=self.get_lecture_id,course_id=self.__course_id))
+            return q
+        else:
+            raise UserWarning(
+                'Atenção essa aula não é um Quiz!'
+            )
 
     @property
     def get_download_urls(self) -> list:
@@ -242,7 +302,7 @@ class Lecture:
         Returns:
             list: Uma lista contendo as URLs de download.
         """
-        return self.__asset.get('download_urls')
+        return self.__asset.get('download_urls',[])
 
     @property
     def get_slide_urls(self) -> list:
@@ -252,7 +312,7 @@ class Lecture:
         Returns:
             list: Uma lista contendo as URLs de slides.
         """
-        return self.__asset.get('slide_urls')
+        return self.__asset.get('slide_urls',[])
 
     @property
     def get_slides(self) -> list:
@@ -262,7 +322,7 @@ class Lecture:
         Returns:
             list: Uma lista contendo os slides.
         """
-        return self.__asset.get('slides')
+        return self.__asset.get('slides',[])
 
     @property
     def get_articles(self):
@@ -272,8 +332,11 @@ class Lecture:
         Returns:
             Os artigos relacionados à aula.
         """
-        d = assets_infor(course_id=self.__course_id, id_lecture=self.get_lecture_id, assets_id=self.__asset.get("id"))
-        return d
+        if self.__asset:
+            d = assets_infor(course_id=self.__course_id, id_lecture=self.get_lecture_id, assets_id=self.__asset.get("id"))
+            return d
+        else:
+            return []
 
     @property
     def get_resources(self):
@@ -283,10 +346,12 @@ class Lecture:
         Returns:
             Os recursos adicionais relacionados à aula.
         """
-        files_add = get_files_aule(lecture_id_filter=self.get_lecture_id, data=self.__additional_files)
-        f = Files(files=files_add, id_course=self.__course_id).get_download_url
-        return f
-
+        if self.__additional_files:
+            files_add = get_files_aule(lecture_id_filter=self.get_lecture_id, data=self.__additional_files)
+            f = Files(files=files_add, id_course=self.__course_id).get_download_url
+            return f
+        else:
+            return []
 
 class Course:
     """Recebe um dicionário com os dados do curso."""
@@ -299,8 +364,8 @@ class Course:
             results (dict): Um dicionário contendo os dados do curso.
             course_id (int): O ID do curso.
         """
-        self.__parser_chapers = parser_chapers(results=results)
-        self.__data = self.__parser_chapers
+        self.__parser_chapers = parser_chapters(results=results)
+        self.__data:list = self.__parser_chapers
         self.__course_id = course_id
         self.__results = results
         self.__additional_files_data = get_add_files(course_id)
@@ -375,8 +440,8 @@ class Course:
             int: O número total de lectures no curso.
         """
         total_lectures = 0
-        for chapter in self.__data.values():
-            total_lectures += len(chapter.get('videos_in_chapter', []))
+        for chapter in self.__data:
+            total_lectures += len(chapter.get('lectures', []))
         return total_lectures
 
     @property
@@ -398,11 +463,13 @@ class Course:
             list: Uma lista contendo os títulos de vídeos no curso.
         """
         videos = []
-        for chapter in self.__data.values():
+        for chapter in self.__data:
             for video in chapter.get('videos_in_chapter', []):
-                title = video['video_title']
-                if title != "Files":
-                    videos.append(title)
+                asset_type = video.get('asset_type')
+                if asset_type == 'Video':
+                    title = video['title']
+                    if title != "Files":
+                        videos.append(title)
         return videos
 
     @property
@@ -410,27 +477,25 @@ class Course:
         """
         Obtém uma lista com todas as aulas.
 
+        Args:
+            data (list): Lista de capítulos contendo as aulas.
+
         Returns:
             list: Uma lista contendo todas as aulas.
         """
         videos = []
-        section_order = 1  # Iniciar a numeração das seções (capítulos)
 
-        for chapter in self.__data.values():
-            for index, video in enumerate(chapter.get('videos_in_chapter', [])):
-                section = f"{chapter.get('title_chapter')}"  # Adicionar numeração da Sessão
-                title = video.get('video_title')
-                id_lecture = video.get('lecture_id')
-                id_asset = video.get('asset_id')
+        for chapter in self.__data:
+            for video in chapter.get('lectures', []):
                 dt = {
-                    'section': section,
-                    'title': title,
-                    'lecture_id': id_lecture,
-                    'asset_id': id_asset,
-                    'section_order': section_order
+                    'section': chapter.get('title', ''),
+                    'title': video.get('title', ''),
+                    'lecture_id': video.get('lecture_id', ''),
+                    'asset_id': video.get('asset_id', ''),
+                    'asset_type': video.get('asset_type', '')
                 }
                 videos.append(dt)
-            section_order += 1  # Incrementar o número da Sessão após processar os vídeos do capítulo
+
         return videos
 
     def get_details_lecture(self, lecture_id: int) -> Lecture:
@@ -443,7 +508,19 @@ class Course:
         Returns:
             Lecture: Um objeto Lecture contendo os detalhes da aula.
         """
-        links = get_links(course_id=self.__course_id, id_lecture=lecture_id)
+        type_lecture  = ''
+        links= {}
+        if not is_lecture_in_course(lecture_id=lecture_id,lectures=self.get_lectures):
+            raise FileNotFoundError(
+                'Essa aula não existe nesse curso!'
+            )
+        for l in self.get_lectures:
+            if lecture_id == l.get('lecture_id'):
+                type_lecture = l.get('asset_type')
+        if type_lecture.lower() ==  'video' or type_lecture.lower() == 'article':
+            links = get_links(course_id=self.__course_id, id_lecture=lecture_id)
+        else:
+            links = get_assessments(course_id=self.__course_id,lecture_id=lecture_id)
         additional_files = self.__load_assets()
         lecture = Lecture(data=links, course_id=self.__course_id, additional_files=additional_files)
         return lecture

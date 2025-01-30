@@ -134,7 +134,8 @@ def extract(pssh, license_token):
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
     if not auth.verif_login():
-        raise LoginException("Sessão expirada!")
+        raise LoginException(
+            "Sessão expirada!")
     license_url = (f"https://www.udemy.com/api-2.0/media-license-server/validate-auth-token?drm_type=widevine"
                    f"&auth_token={license_token}")
     session_id = cdm.open()
@@ -184,43 +185,58 @@ def get_mpd_file(mpd_url):
         raise UnhandledExceptions(f"Errro Ao Obter Mídias:{e}")
 
 
-def parser_chapers(results):
-    """
-    :param results:
-    :return:
-    """
+def parser_chapters(results) -> list[dict]:
     if not results:
         raise UdemyUserApiExceptions("Não foi possível obter detalhes do curso!")
-    results = results.get('results', None)
-    if not results:
-        raise UdemyUserApiExceptions("Não foi possível obter detalhes do curso!")
-    chapters_dict = {}  # Dicionário para armazenar os capítulos e seus vídeos correspondentes
 
-    # Primeiro, construímos um dicionário de capítulos
-    current_chapter = None
+    results = results.get('results', [])
+    chapters_dicts = []  # Lista que armazena todos os capítulos
+    current_chapter = None  # Capítulo atual
+
     for dictionary in results:
         _class = dictionary.get('_class')
+        chapter_index = dictionary.get('object_index')
 
+        # Quando encontrar um novo capítulo
         if _class == 'chapter':
-            chapter_index = dictionary.get('object_index')
+            if current_chapter:  # Se já há um capítulo atual, adicionamos
+                chapters_dicts.append(current_chapter)
+
+            # Inicia um novo capítulo
             current_chapter = {
-                'title_chapter': dictionary.get('title'),
-                'videos_in_chapter': []
+                'title': dictionary.get('title'),
+                'chapter_index': chapter_index,
+                'lectures': []  # Lista para armazenar aulas e quizzes
             }
-            chapters_dict[f"chapter_{chapter_index}"] = current_chapter
-        elif _class == 'lecture' and current_chapter is not None:
+
+        # Se for uma aula, adiciona ao capítulo atual
+        elif _class == 'lecture' and current_chapter:
             asset = dictionary.get('asset')
             if asset:
-                video_title = dictionary.get('title', None)
-                if not video_title:
-                    video_title = 'Files'
-                current_chapter['videos_in_chapter'].append({
-                    'video_title': video_title,
-                    'title_lecture': dictionary.get('title'),
-                    'lecture_id': dictionary.get('id'),
-                    'asset_id': asset.get('id')
-                })
-    return chapters_dict
+                lecture_data = {
+                    'asset_type': asset.get('asset_type', ''),
+                    'title': dictionary.get('title', 'Files'),
+                    'lecture_id': dictionary.get('id', ''),
+                    'asset_id': asset.get('id', '')
+                }
+                current_chapter['lectures'].append(lecture_data)
+
+        # Se for um quiz, também adiciona ao capítulo atual
+        elif _class == 'quiz' and current_chapter:
+            quiz_data = {
+                'asset_type': 'quiz',
+                'title': dictionary.get('title', 'Quiz'),
+                'lecture_id': dictionary.get('id', ''),
+                'type': dictionary.get('type', ''),
+                'asset_id': ''
+            }
+            current_chapter['lectures'].append(quiz_data)
+
+    # Adiciona o último capítulo processado
+    if current_chapter:
+        chapters_dicts.append(current_chapter)
+
+    return chapters_dicts
 
 
 def get_add_files(course_id: int):
@@ -304,11 +320,11 @@ def get_links(course_id: int, id_lecture: int):
     erro ao obter dados das aulas.
     """
     get = (f"https://www.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/lectures/{id_lecture}/?"
-           f"fields[lecture]"
-           f"=asset,description,download_url,is_free,last_watched_second&fields[asset]=asset_type,length,"
-           f"media_license_token,course_is_drmed,media_sources,captions,thumbnail_sprite,slides,slide_urls,"
-           f"download_urls,"
-           f"external_url&q=0.3108014137011559/?fields[asset]=download_urls")
+               f"fields[lecture]"
+               f"=asset,description,download_url,is_free,last_watched_second&fields[asset]=asset_type,length,"
+               f"media_license_token,course_is_drmed,media_sources,captions,thumbnail_sprite,slides,slide_urls,"
+               f"download_urls,"
+               f"external_url&q=0.3108014137011559/?fields[asset]=download_urls")
     from .authenticate import UdemyAuth
     auth = UdemyAuth()
     if not auth.verif_login():
@@ -322,18 +338,96 @@ def get_links(course_id: int, id_lecture: int):
             a = json.loads(response.text)
             return a
         else:
-            raise UnhandledExceptions(f"Erro ao obter dados de aulas! Código de status: {response.status_code}")
+            raise UnhandledExceptions(
+                f"Erro ao obter dados da aula! Código de status: {response.status_code}")
 
     except requests.ConnectionError as e:
-        raise UdemyUserApiExceptions(f"Erro de conexão: {e}")
+        raise UdemyUserApiExceptions(
+            f"Erro de conexão: {e}")
     except requests.Timeout as e:
-        raise UdemyUserApiExceptions(f"Tempo de requisição excedido: {e}")
+        raise UdemyUserApiExceptions(
+            f"Tempo de requisição excedido: {e}")
     except requests.TooManyRedirects as e:
-        raise UdemyUserApiExceptions(f"Limite de redirecionamentos excedido: {e}")
+        raise UdemyUserApiExceptions(
+            f"Limite de redirecionamentos excedido: {e}")
     except requests.HTTPError as e:
-        raise UdemyUserApiExceptions(f"Erro HTTP: {e}")
+        raise UdemyUserApiExceptions(
+            f"Erro HTTP: {e}")
     except Exception as e:
-        raise UnhandledExceptions(f"Erro ao obter mídias: {e}")
+        raise UnhandledExceptions(
+            f"Erro ao obter mídias: {e}")
+
+def get_assessments(course_id: int,lecture_id:int):
+    get = (f'https://www.udemy.com/api-2.0/users/me/subscribed-courses/{course_id}/quizzes/{lecture_id}/?draft='
+           f'false&fields[quiz]=id,type,title,description,object_index,num_assessments,version,duration,'
+           f'is_draft,pass_percent,changelog')
+    from .authenticate import UdemyAuth
+    auth = UdemyAuth()
+    if not auth.verif_login():
+        raise LoginException("Sessão expirada!")
+    try:
+        # Faz a solicitação GET com os cabeçalhos
+        response = requests.get(get, headers=HEADERS_USER)
+        data = []
+        # Exibe o código de status
+        if response.status_code == 200:
+            a = json.loads(response.text)
+            return a
+        else:
+            raise ConnectionError(
+                f"Erro ao obter dados da aula! Código de status: {response.status_code}\n"
+                f"{response.text}"
+            )
+
+    except requests.ConnectionError as e:
+        raise UdemyUserApiExceptions(
+            f"Erro de conexão: {e}")
+    except requests.Timeout as e:
+        raise UdemyUserApiExceptions(
+            f"Tempo de requisição excedido: {e}")
+    except requests.TooManyRedirects as e:
+        raise UdemyUserApiExceptions(
+            f"Limite de redirecionamentos excedido: {e}")
+    except requests.HTTPError as e:
+        raise UdemyUserApiExceptions(
+            f"Erro HTTP: {e}")
+
+
+def get_quizzes(lecture_id:int):
+    get = (f'https://www.udemy.com/api-2.0/quizzes/{lecture_id}/assessments/?version=1&page_size=1000&fields[assessment]'
+           f'=id,assessment_type,prompt,correct_response,section,question_plain,related_lectures&use_remote_version=true'
+           )
+    from .authenticate import UdemyAuth
+    auth = UdemyAuth()
+    if not auth.verif_login():
+        raise LoginException("Sessão expirada!")
+    try:
+        # Faz a solicitação GET com os cabeçalhos
+        response = requests.get(get, headers=HEADERS_USER)
+        data = []
+        # Exibe o código de status
+        if response.status_code == 200:
+            a = json.loads(response.text)
+            return a
+        else:
+            raise UnhandledExceptions(
+                f"Erro ao obter dados da aula! Código de status: {response.status_code}")
+
+    except requests.ConnectionError as e:
+        raise UdemyUserApiExceptions(
+            f"Erro de conexão: {e}")
+    except requests.Timeout as e:
+        raise UdemyUserApiExceptions(
+            f"Tempo de requisição excedido: {e}")
+    except requests.TooManyRedirects as e:
+        raise UdemyUserApiExceptions(
+            f"Limite de redirecionamentos excedido: {e}")
+    except requests.HTTPError as e:
+        raise UdemyUserApiExceptions(
+            f"Erro HTTP: {e}")
+    except Exception as e:
+        raise UnhandledExceptions(
+            f"Erro ao obter mídias: {e}")
 
 
 def remove_tag(d: str):
@@ -607,6 +701,7 @@ def assets_infor(course_id: int, id_lecture: int, assets_id: int):
                               f"{r.text}")
 
 
+
 def save_html(body, title_lecture):
     html_content = f"""<!DOCTYPE html>
 <html lang="en">
@@ -620,7 +715,6 @@ def save_html(body, title_lecture):
 </html>"""
 
     return html_content
-
 
 def J(e, t):
     """
@@ -689,3 +783,9 @@ def te(e, t):
     s = t[:r]
     o = ''.join(format(byte, '08b') for byte in s)
     return o.startswith('0' * e)
+def is_lecture_in_course(lectures,lecture_id) -> bool:
+        # Verifica se o lecture_id está presente na lista de aulas
+        for lecture in lectures:
+            if lecture.get('lecture_id') == lecture_id:
+                return True
+        return False

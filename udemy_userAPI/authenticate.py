@@ -105,7 +105,7 @@ class UdemyAuth:
             except requests.HTTPError as e:
                 raise UdemyUserApiExceptions(f"Erro HTTP: {e}")
             except Exception as e:
-                raise UnhandledExceptions(f"Unhandled-ERROR: {e}")
+                raise UnhandledExceptions(f"{e}")
         else:
             return False
 
