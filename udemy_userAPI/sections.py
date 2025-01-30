@@ -84,7 +84,8 @@ def get_details_courses(course_id):
         resposta = json.loads(response.text)
         return resposta
     else:
-        raise UdemyUserApiExceptions(f"Erro ao obter detalhes do curso! Código de status: {response.status_code}")
+        raise UdemyUserApiExceptions(
+            response.text)
 
 
 def get_course_infor(course_id):

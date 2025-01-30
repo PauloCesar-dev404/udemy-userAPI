@@ -162,6 +162,115 @@ class Quiz:
         htmls = get_quizzes(lecture_id=self.id)
         return htmls
 
+
+class Caption:
+    """Representa uma legenda."""
+
+    def __init__(self, caption: dict):
+        """
+        Inicializa uma instância de Caption.
+
+        Args:
+            caption (dict): Dados da legenda.
+        """
+        self._caption = caption
+
+    @property
+    def locale(self) -> str:
+        """Retorna o idioma."""
+        return self._caption.get('video_label', '')
+
+    @property
+    def status(self) -> str:
+        """Retorna o status da legenda 1 ou 0"""
+        return self._caption.get('status')
+
+    @property
+    def title(self) -> str:
+        """Retorna o título da legenda."""
+        return self._caption.get('title', '')
+
+    @property
+    def created(self) -> str:
+        """Retorna a data de criação da legenda."""
+        return self._caption.get('created', '')
+
+    @property
+    def id(self) -> int:
+        """Retorna o ID da legenda."""
+        return self._caption.get('id', 0)
+
+    @property
+    def url(self) -> str:
+        """Retorna a URL da legenda."""
+        return self._caption.get('url', '')
+
+    @property
+    def content(self) -> str:
+        """Obtém o conteúdo da legenda."""
+        if self.url:
+            r = requests.get(headers=HEADERS_USER, url=self.url)
+            if r.status_code == 200:
+                return r.text
+            else:
+                raise ConnectionError(
+                    f'status_code: {r.status_code}, Não foi possível obter o conteúdo da legenda!'
+                )
+        else:
+            raise FileNotFoundError(
+                'Não foi possível obter a URL da legenda!'
+            )
+
+class Captions:
+    """Gerencia as legendas de um vídeo."""
+
+    def __init__(self, caption_data: list):
+        """
+        Inicializa uma instância de Captions.
+
+        Args:
+            caption_data (list): Dados das legendas.
+        """
+        self._caption_data = caption_data
+
+    def languages(self) -> list[dict]:
+        """Retorna a lista de idiomas disponíveis na aula."""
+        langs = []
+        for caption in self._caption_data:
+            locale_id = caption.get('locale_id', '')
+            video_label = caption.get('video_label','')
+            if locale_id:
+                langs.append({'locale_id': locale_id,'locale':video_label})
+        return langs
+
+    def get_lang(self, locale_id: str) -> Caption:
+        """
+        Obtém a legenda para o idioma especificado.
+
+
+        Args:
+            locale_id (str): ID do idioma,pode ser obtido no método -> 'languages'
+
+        Returns:
+            Caption: Objeto Caption.
+
+        Raises:
+            FileNotFoundError: Se o idioma não estiver disponível na aula.
+        """
+        is_t = False
+        cpt = {}
+        for caption in self._caption_data:
+            if locale_id == caption.get('locale_id'):
+                is_t = True
+                cpt = caption
+        if not is_t:
+            raise FileNotFoundError(
+                'Esse idioma não está disponível nessa aula!'
+            )
+        c = Caption(caption=cpt)
+        return c
+
+
 class Lecture:
     """Cria objetos aula (lecture) do curso e extrai os dados."""
 
@@ -244,15 +353,20 @@ class Lecture:
         return self.__asset.get('media_sources',[])
 
     @property
-    def get_captions(self) -> list:
+    def get_captions(self) -> Captions:
         """
         Obtém as legendas.
 
         Returns:
-            list: Uma lista contendo as legendas.
+            Captions: Objeto para gerenciar as legendas.
         """
-        return self.__asset.get('captions',[])
-
+        if self.__asset.get('captions',[]):
+            c = Captions(caption_data=self.__asset.get('captions',[]))
+            return c
+        else:
+            raise FileNotFoundError(
+                'Não foi encontrada legendas nessa aula!'
+            )
     @property
     def get_external_url(self) -> list:
         """
@@ -475,11 +589,7 @@ class Course:
     @property
     def get_lectures(self) -> list:
         """
-        Obtém uma lista com todas as aulas.
-
-        Args:
-            data (list): Lista de capítulos contendo as aulas.
-
+        Obtém uma lista de dicionários com todas as aulas.
         Returns:
             list: Uma lista contendo todas as aulas.
         """
