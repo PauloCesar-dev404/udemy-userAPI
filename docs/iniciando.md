@@ -20,4 +20,5 @@
 - [Obtendo Os Cursos Que Estou Inscrito](Obtendo%20Os%20Cursos%20Que%20Estou%20Inscrito.md)
 - [Obter Detalhes De Um Curso.md](Obter%20Detalhes%20De%20Um%20Curso.md)
 - [Obter Detalhes de Uma Aula.md](Obter%20Detalhes%20de%20Uma%20Aula.md)
-- [Obter Quiz](Obter%20Quiz.md)
+- [Obter Quiz](Obter%20Quiz.md).
+- [Obter Legendas](Obtendo%20Legendas.md)
