@@ -19,6 +19,9 @@ class Udemy:
             LoginException: Se a sessão estiver expirada.
         """
         self.__headers = HEADERS_USER
+        if not verif_login:
+            raise LoginException("Sessão expirada!")
+
     @staticmethod
     def my_subscribed_courses_by_plan() -> list[dict]:
         """
@@ -30,10 +33,6 @@ class Udemy:
         Raises:
             UdemyUserApiExceptions: Se houver erro ao obter os cursos.
         """
-        if not verif_login:
-            raise LoginException(
-                                 "Nenhuma sessão ativa,primeiro efetue login!")
-
         try:
             courses = get_courses_plan(tipe='plan')
             return courses
@@ -51,10 +50,6 @@ class Udemy:
         Raises:
             UdemyUserApiExceptions: Se houver erro ao obter os cursos.
         """
-        if not verif_login:
-            raise LoginException(
-                "Nenhuma sessão ativa,primeiro efetue login!")
-
         try:
             # Obtém os cursos
             courses1 = get_courses_plan(tipe='default')  # lista de cursos padrão
@@ -77,7 +72,7 @@ class Udemy:
             raise UnhandledExceptions(e)
 
     @staticmethod
-    def get_details_course(course_id) ->Course:
+    def get_details_course(course_id):
         """
         Obtém detalhes de um curso através do ID.
 
@@ -90,10 +85,6 @@ class Udemy:
         Raises:
             UnhandledExceptions: Se houver erro ao obter os detalhes do curso.
         """
-        if not verif_login:
-            raise LoginException(
-                                 "Nenhuma sessão ativa,primeiro efetue login!")
-
         try:
             d = get_details_courses(course_id)
             b = Course(course_id=course_id, results=d)

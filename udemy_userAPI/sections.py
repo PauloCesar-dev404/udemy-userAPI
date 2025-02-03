@@ -53,13 +53,13 @@ def get_courses_plan(tipe: str) -> list:
 
 def get_details_courses(course_id):
     """
-    Obtém detalhes de um curso específico.
+    Obtém detalhes de um curso específico, realizando paginação caso haja múltiplas páginas.
 
     Args:
         course_id (int): ID do curso.
 
     Returns:
-        dict: Dicionário contendo os detalhes do curso.
+        dict: Dicionário contendo os detalhes do curso com todos os itens concatenados.
 
     Raises:
         LoginException: Se a sessão estiver expirada.
@@ -70,22 +70,47 @@ def get_details_courses(course_id):
     auth = UdemyAuth()
     if not auth.verif_login():
         raise LoginException("Sessão expirada!")
-    response = requests.get(
+
+    # URL base com parâmetros
+    base_url = (
         f"https://www.udemy.com/api-2.0/courses/{course_id}/subscriber-curriculum-items/?"
-        f"caching_intent=True&fields%5Basset%5D=title%2Cfilename%2Casset_type%2Cstatus%2Ctime_estimation%2"
-        f"Cis_external&fields%5Bchapter%5D=title%2Cobject_index%2Cis_published%2Csort_order&fields%5Blecture"
-        f"%5D=title%2Cobject_index%2Cis_published%2Csort_order%2Ccreated%2Casset%2Csupplementary_assets%2"
-        f"Cis_free&fields%5Bpractice%5D=title%2Cobject_index%2Cis_published%2Csort_order&fields%5Bquiz%5D="
-        f"title%2Cobject_index%2Cis_published%2Csort_order%2Ctype&pages&page_size=400&fields[lecture]=asset,"
-        f"description,download_url,is_free,last_watched_second&fields[asset]=asset_type,length,"
-        f"media_license_token,course_is_drmed,external_url&q=0.3108014137011559",
-        headers=HEADERS_USER)
-    if response.status_code == 200:
-        resposta = json.loads(response.text)
-        return resposta
-    else:
-        raise UdemyUserApiExceptions(
-            response.text)
+        f"page_size=1000&"
+        f"fields[lecture]=title,object_index,is_published,sort_order,created,asset,supplementary_assets,is_free&"
+        f"fields[quiz]=title,object_index,is_published,sort_order,type&"
+        f"fields[practice]=title,object_index,is_published,sort_order&"
+        f"fields[chapter]=title,object_index,is_published,sort_order&"
+        f"fields[asset]=title,filename,asset_type,status,time_estimation,is_external&"
+        f"caching_intent=True"
+    )
+
+    try:
+        response = requests.get(base_url, headers=HEADERS_USER)
+        if response.status_code != 200:
+            raise UdemyUserApiExceptions(
+                f"Erro ao obter detalhes do curso! Código de status: {response.status_code}")
+
+        data = json.loads(response.text)
+        all_results = data.get('results', [])
+        next_page = data.get('next', '')
+
+        # Enquanto houver próxima página, faz requisição e junta os resultados
+        while next_page:
+            response = requests.get(next_page, headers=HEADERS_USER)
+            if response.status_code != 200:
+                # Caso ocorra erro na próxima página, pode-se optar por interromper ou registrar o erro.....por enquanto
+                # irei parar..mais se por acaso futuramente não der certo mudarei esta implementação!
+                # @pauloCesarDev404
+                break
+            next_data = json.loads(response.text)
+            all_results.extend(next_data.get('results', []))
+            next_page = next_data.get('next', '')
+
+        # Atualiza o dicionário final com todos os itens concatenados
+        data['results'] = all_results
+        return data
+
+    except Exception as e:
+        raise UdemyUserApiExceptions(f"Erro ao obter detalhes do curso! {e}")
 
 
 def get_course_infor(course_id):

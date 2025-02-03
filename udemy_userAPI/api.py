@@ -186,53 +186,75 @@ def get_mpd_file(mpd_url):
 
 
 def parser_chapters(results) -> list[dict]:
+    """
+    Processa os dados do curso e retorna uma lista de capítulos com suas aulas e quizzes.
+
+    Se os resultados não contiverem capítulos (i.e. apenas aulas ou quizzes), todas as
+    aulas/quizzes serão agrupadas em um capítulo padrão.
+
+    Args:
+        results (dict): Dicionário com os resultados do curso, normalmente contendo a chave 'results'.
+
+    Returns:
+        list[dict]: Lista de capítulos, cada um com título, índice (se disponível) e lista de lectures/quizzes.
+
+    Raises:
+        UdemyUserApiExceptions: Se não for possível obter os detalhes do curso.
+    """
     if not results:
         raise UdemyUserApiExceptions("Não foi possível obter detalhes do curso!")
 
-    results = results.get('results', [])
-    chapters_dicts = []  # Lista que armazena todos os capítulos
+    items = results.get('results', [])
+    chapters_dicts = []  # Lista de capítulos
     current_chapter = None  # Capítulo atual
 
-    for dictionary in results:
+    # Nome padrão para o grupo quando não houver capítulos
+    default_chapter_title = "CourseFiles"
+
+    for dictionary in items:
         _class = dictionary.get('_class')
-        chapter_index = dictionary.get('object_index')
+        chapter_index = dictionary.get('object_index', None)
 
-        # Quando encontrar um novo capítulo
         if _class == 'chapter':
-            if current_chapter:  # Se já há um capítulo atual, adicionamos
+            # Se já há um capítulo em andamento, adiciona-o à lista
+            if current_chapter:
                 chapters_dicts.append(current_chapter)
-
             # Inicia um novo capítulo
             current_chapter = {
-                'title': dictionary.get('title'),
+                'title': dictionary.get('title', 'Sem Título'),
                 'chapter_index': chapter_index,
                 'lectures': []  # Lista para armazenar aulas e quizzes
             }
-
-        # Se for uma aula, adiciona ao capítulo atual
-        elif _class == 'lecture' and current_chapter:
-            asset = dictionary.get('asset')
-            if asset:
-                lecture_data = {
-                    'asset_type': asset.get('asset_type', ''),
-                    'title': dictionary.get('title', 'Files'),
-                    'lecture_id': dictionary.get('id', ''),
-                    'asset_id': asset.get('id', '')
+        elif _class in ('lecture', 'quiz'):
+            # Se não houver um capítulo atual, cria um capítulo padrão
+            if current_chapter is None:
+                current_chapter = {
+                    'title': default_chapter_title,
+                    'chapter_index': None,
+                    'lectures': []
                 }
-                current_chapter['lectures'].append(lecture_data)
+            # Processa a aula ou quiz
+            if _class == 'lecture':
+                asset = dictionary.get('asset')
+                if asset:
+                    lecture_data = {
+                        'asset_type': asset.get('asset_type', ''),
+                        'title': dictionary.get('title', 'Aula'),
+                        'lecture_id': dictionary.get('id', ''),
+                        'asset_id': asset.get('id', '')
+                    }
+                    current_chapter['lectures'].append(lecture_data)
+            elif _class == 'quiz':
+                quiz_data = {
+                    'asset_type': 'quiz',
+                    'title': dictionary.get('title', 'Quiz'),
+                    'lecture_id': dictionary.get('id', ''),
+                    'type': dictionary.get('type', ''),
+                    'asset_id': ''
+                }
+                current_chapter['lectures'].append(quiz_data)
 
-        # Se for um quiz, também adiciona ao capítulo atual
-        elif _class == 'quiz' and current_chapter:
-            quiz_data = {
-                'asset_type': 'quiz',
-                'title': dictionary.get('title', 'Quiz'),
-                'lecture_id': dictionary.get('id', ''),
-                'type': dictionary.get('type', ''),
-                'asset_id': ''
-            }
-            current_chapter['lectures'].append(quiz_data)
-
-    # Adiciona o último capítulo processado
+    # Se houver um capítulo em andamento, adiciona-o à lista
     if current_chapter:
         chapters_dicts.append(current_chapter)
 
