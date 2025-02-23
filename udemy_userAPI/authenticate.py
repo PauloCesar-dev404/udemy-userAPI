@@ -208,7 +208,7 @@ class UdemyAuth:
             with open(self.__file_path, 'wb') as f:
                 f.write(b'')
 
-    def login_passwordless(self, email: str, locale: str = 'pt-BR'):
+    def login_passwordless(self, email: str, locale: str = 'pt-BR', otp_callback=None):
         """
         Realiza login na Udemy usando autenticação de dois fatores (2FA).
 
@@ -219,6 +219,7 @@ class UdemyAuth:
         Args:
             email (str): Email do usuário.
             locale (str): Localização do usuário (recomendado para receber mensagens no idioma local).
+            otp_callback (callable, opcional): Função para obter o código OTP (se None, usa input padrão).
 
         Raises:
             LoginException: Em caso de falha no processo de login.
@@ -227,23 +228,16 @@ class UdemyAuth:
         try:
             if self.verif_login():
                 raise UserWarning("Atenção, você já possui uma Sessão válida!")
-            # Inicializa uma sessão com proteção contra Cloudflare
-            session = cloudscraper.create_scraper()
 
-            # Requisita a página de inscrição para obter o token CSRF
+            session = cloudscraper.create_scraper()
             signup_url = "https://www.udemy.com/join/signup-popup/"
             headers = {"User-Agent": "okhttp/4.9.2 UdemyAndroid 8.9.2(499) (phone)"}
             response = session.get(signup_url, headers=headers)
-
-            # Obtém o token CSRF dos cookies retornados
             csrf_token = response.cookies.get("csrftoken")
             if not csrf_token:
                 raise LoginException("Não foi possível obter o token CSRF.")
 
-            # Prepara os dados do login
             data = {"email": email, "fullname": ""}
-
-            # Atualiza os cookies e cabeçalhos da sessão
             session.cookies.update(response.cookies)
             session.headers.update({
                 "User-Agent": "okhttp/4.9.2 UdemyAndroid 8.9.2(499) (phone)",
@@ -261,17 +255,20 @@ class UdemyAuth:
                 "Cache-Control": "no-cache",
             })
 
-            # Faz a requisição para iniciar o login
             login_url = "https://www.udemy.com/api-2.0/auth/code-generation/login/4.0/"
             response = session.post(login_url, data=data, allow_redirects=False)
+
             if 'error_message' in response.text:
                 erro_data: dict = response.json()
                 error_message = erro_data.get('error_message', {})
                 raise LoginException(error_message)
+
             for attempt in range(3):
-                # Solicita o código OTP ao usuário
-                otp = input("Digite o código de 6 dígitos enviado ao seu e-mail: ")
-                # Realiza o login com o código OTP
+                # Obtém o código OTP via callback ou terminal
+                if otp_callback and callable(otp_callback):
+                    otp = otp_callback()
+                else:
+                    otp = input("Digite o código de 6 dígitos enviado ao seu e-mail: ")
                 otp_login_url = "https://www.udemy.com/api-2.0/auth/udemy-passwordless/login/4.0/"
                 otp_data = {
                     "email": email,
@@ -280,33 +277,36 @@ class UdemyAuth:
                     "subscribeToEmails": "false",
                     "upow": J(email, 'login')
                 }
+
                 session.headers.update({
                     "Referer": f"https://www.udemy.com/join/passwordless-auth/?locale={locale}&next="
                                f"https%3A%2F%2Fwww.udemy.com%2Fmobile%2Fipad%2F&response_type=html"
                 })
+
                 response = session.post(otp_login_url, otp_data, allow_redirects=False)
-                # Verifica se o login foi bem-sucedido
+
                 if response.status_code == 200:
                     self._save_cookies(session.cookies)
+                    break  # Sai do loop se o login for bem-sucedido
                 else:
                     if 'error_message' in response.text:
                         erro_data: dict = response.json()
                         error_message = erro_data.get('error_message', {})
                         error_code = erro_data.get('error_code', {})
+
                         if error_code == '1538':
                             raise LoginException(error_message)
                         elif error_code == '2550':
-                            print(error_message)
-                            continue
+                            ### codigo errado....
+                            raise LoginException(error_message)
                         elif error_code == '1330':
                             raise LoginException(error_message)
                         elif error_code == '1149':
-                            raise LoginException(f"Erro interno ao enviar os dados veja os detalhes: '{error_message}'")
+                            raise LoginException(
+                                f"Erro interno ao enviar os dados, veja os detalhes: '{error_message}'")
+
                     raise LoginException(response.text)
-                break
+
         except Exception as e:
-            if DEBUG:
-                error_details = traceback.format_exc()
-            else:
-                error_details = str(e)
+            error_details = traceback.format_exc() if DEBUG else str(e)
             raise LoginException(error_details)
