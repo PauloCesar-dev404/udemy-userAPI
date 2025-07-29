@@ -14,7 +14,7 @@ import base64
 
 
 AUTH = UdemyAuth()
-COOKIES = AUTH._load_cookies()
+COOKIES = AUTH.load_cookies()
 
 HEADERS_USER = {
     "accept": "*/*",

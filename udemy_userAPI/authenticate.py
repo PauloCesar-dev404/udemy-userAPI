@@ -1,12 +1,45 @@
+import http
 import json
 import os
 import pickle
 import traceback
-import requests
-from .exeptions import UnhandledExceptions, UdemyUserApiExceptions, LoginException, Upstreamconnecterror
+from http.cookies import SimpleCookie
+
 import cloudscraper
+import requests
+
+from .exeptions import UnhandledExceptions, UdemyUserApiExceptions, LoginException, Upstreamconnecterror
 
 DEBUG = False
+
+
+def convert_cook(cookie_string):
+    """
+    Converte uma string de cookies para um dicionário usando http.cookies.
+
+    Args:
+        cookie_string (str): A string de cookies no formato "nome1=valor1; nome2=valor2".
+
+    Returns:
+        dict: Um dicionário onde as chaves são os nomes dos cookies e os valores são os seus respectivos valores.
+              Retorna um dicionário vazio se a string for inválida ou vazia.
+    """
+    if not isinstance(cookie_string, str) or not cookie_string.strip():
+        print("A string de cookies fornecida é inválida ou vazia.")
+        return {}
+
+    cookie = SimpleCookie()
+    try:
+        # Carrega a string de cookies
+        cookie.load(cookie_string)
+
+        # Converte o objeto SimpleCookie para um dicionário regular
+        dicionario_cookies = {k: v.value for k, v in cookie.items()}
+
+        return dicionario_cookies
+    except http.cookies.CookieError as e:
+        print(f"Erro ao analisar a string de cookies: {e}")
+        return {}
 
 
 class UdemyAuth:
@@ -162,7 +195,7 @@ class UdemyAuth:
 
             # Verifica a resposta para determinar se o login foi bem-sucedido
             if "returnUrl" in r.text:
-                self._save_cookies(s.cookies)
+                self.__save_cookies(s.cookies)
             else:
                 login_error = r.json().get("error", {}).get("data", {}).get("formErrors", [])[0]
                 if login_error[0] == "Y":
@@ -176,14 +209,101 @@ class UdemyAuth:
                 e = traceback.format_exc()
             raise LoginException(e)
 
-    def _save_cookies(self, cookies):
+    def login_direct_cookies(self, cookies: str):
+        """
+        Realiza login via cookies diretamente. (Não é seguro para uso em produção).
+
+        Argumentos:
+            cookies: Pode ser o caminho do arquivo cookies (apenas .json ou .txt)
+                     ou a string com os cookies.
+
+        Raises:
+            FileNotFoundError: Se o arquivo especificado não for encontrado.
+            ValueError: Se o arquivo não for .json ou .txt, ou se o JSON for inválido.
+            UnhandledExceptions: Para outros erros inesperados durante a leitura do arquivo.
+            LoginException: Se os cookies estiverem expirados, inválidos ou houver falha no login.
+        """
+        cookies_content = ""
+        # Verifica se a string fornecida é um caminho de arquivo existente
+        if os.path.isfile(cookies):
+            file_extension = os.path.splitext(cookies)[1].lower() # Pega a extensão do arquivo
+
+            # Verifica se a extensão é permitida
+            if file_extension not in ['.json', '.txt']:
+                raise ValueError(
+                    f"Erro: Apenas arquivos .json ou .txt são permitidos. "
+                    f"Extensão recebida: '{file_extension}' para o arquivo '{cookies}'."
+                )
+
+            try:
+                with open(cookies, 'r', encoding='utf-8') as f:
+                    cookies_content = f.read()
+
+                # Se for um arquivo JSON, tenta carregá-lo para validar
+                if file_extension == '.json':
+                    try:
+                        # Tenta carregar o JSON. Se for um JSON de cookies, ele pode estar
+                        # em um formato específico. Aqui estamos apenas validando a sintaxe JSON.
+                        json.loads(cookies_content)
+                    except json.JSONDecodeError as e:
+                        raise ValueError(f"Erro: O arquivo '{cookies}' contém JSON inválido: {e}")
+
+            except FileNotFoundError:
+                raise FileNotFoundError(f"Erro: O arquivo '{cookies}' não foi encontrado.")
+            except Exception as e:
+                raise UnhandledExceptions(f"Erro ao ler o arquivo '{cookies}': {e}")
+        else:
+            # Se não for um arquivo, assume-se que é a string de cookies diretamente
+            cookies_content = cookies
+
+        headers = {
+            "accept": "*/*",
+            "accept-language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+            "cache-control": "no-cache",
+            "pragma": "no-cache",
+            "sec-ch-ua": '"Chromium";v="118", "Google Chrome";v="118", "Not=A?Brand";v="99"',
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": '"Windows"',
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            "Cookie": cookies_content,
+            "Referer": "https://www.udemy.com/"
+        }
+        url = 'https://www.udemy.com/api-2.0/contexts/me/?header=true'
+
+        try:
+            resp = requests.get(url=url, headers=headers)
+            resp.raise_for_status() # Lança um HTTPError para respostas de status de erro (4xx ou 5xx)
+
+            convert = resp.json() # Usa resp.json() para parsear diretamente o JSON
+            is_logged_in = convert.get('header', {}).get('isLoggedIn', None)
+
+            if not is_logged_in:
+                raise LoginException(
+                    "Cookies expirados ou inválidos!")
+            self.__save_cookies(resp.cookies)
+
+        except requests.exceptions.HTTPError as e:
+            # Captura erros HTTP (ex: 401 Unauthorized, 403 Forbidden)
+            raise LoginException(f"Erro de HTTP durante o login: {e}. Resposta: {e.response.text}")
+        except requests.exceptions.ConnectionError as e:
+            raise UnhandledExceptions(f"Erro de conexão: {e}")
+        except requests.exceptions.Timeout as e:
+            raise UnhandledExceptions(f"Tempo limite da requisição excedido: {e}")
+        except json.JSONDecodeError as e:
+            raise UnhandledExceptions(f"Erro ao decodificar JSON da resposta da API: {e}. Resposta: {resp.text}")
+        except Exception as e:
+            raise UnhandledExceptions(f"Um erro inesperado ocorreu durante o login: {e}")
+
+    def __save_cookies(self, cookies):
         try:
             with open(fr'{self.__file_path}', 'wb') as f:
                 pickle.dump(cookies, f)
         except Exception as e:
             raise LoginException(e)
 
-    def _load_cookies(self) -> str:
+    def load_cookies(self) -> str:
         """Carrega cookies e retorna-os em uma string formatada"""
         try:
             file = os.path.join(self.__file_path)
@@ -286,7 +406,7 @@ class UdemyAuth:
                 response = session.post(otp_login_url, otp_data, allow_redirects=False)
 
                 if response.status_code == 200:
-                    self._save_cookies(session.cookies)
+                    self.__save_cookies(session.cookies)
                     break  # Sai do loop se o login for bem-sucedido
                 else:
                     if 'error_message' in response.text:
