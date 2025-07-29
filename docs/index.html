@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentação - udemy-userAPI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code&display=swap" rel="stylesheet">
+    <link rel="apple-touch-icon" sizes="180x180" href="../assets//apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="../assets/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="../assets//favicon-16x16.png">
+    <link rel="manifest" href="../assets//site.webmanifest">
+    <!-- 
+        Chosen Palette: "Warm Neutrals" - A calm and professional theme using a light beige/off-white background, dark text for readability, and a muted teal for accents and links.
+        Application Structure Plan: A two-column layout. A sticky left sidebar provides a filterable navigation tree of the library's modules, classes, and functions. The right column displays the corresponding content. This structure is standard for technical documentation, offering excellent usability and easy navigation. Users can instantly jump to any section or search for specific API components.
+        Visualization & Content Choices: The primary content is textual documentation. Key interactive elements are the navigation tree, a real-time search filter for the API, and copy-to-clipboard buttons for all code blocks. A simple architectural diagram is created using styled HTML divs to visually represent the library's structure, enhancing comprehension. No charts are needed. All interactions are designed to make finding and using information as efficient as possible.
+        CONFIRMATION: NO SVG graphics used. NO Mermaid JS used.
+    -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #FDFBF8;
+            color: #2d3748;
+        }
+        pre, code {
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem; /* Slightly smaller for code */
+            line-height: 1.5;
+        }
+        .content-section {
+            display: none;
+        }
+        .content-section.active {
+            display: block;
+        }
+        .nav-link.active {
+            background-color: #E6FFFA;
+            color: #2C7A7B;
+            font-weight: 600;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
+
+        /* Code Block Styling */
+        .code-container pre {
+            background-color: #2d3748; /* Darker background for code */
+            color: #f8f8f2; /* Light text */
+            padding: 1.25rem; /* More padding */
+            border-radius: 0.75rem; /* More rounded corners */
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            overflow-x: auto;
+            position: relative;
+        }
+
+        /* Simulated Syntax Highlighting */
+        .token-keyword { color: #8BE9FD; } /* Light Blue */
+        .token-string { color: #F1FA8C; }  /* Yellow */
+        .token-comment { color: #6272A4; } /* Muted Grey-Blue */
+        .token-function { color: #50FA7B; } /* Green */
+        .token-class { color: #FF79C6; }    /* Pink */
+        .token-operator { color: #FFB86C; } /* Orange */
+        .token-number { color: #BD93F9; }   /* Purple */
+        .token-variable { color: #F8F8F2; } /* Default White */
+        .token-exception { color: #FF5555; } /* Red */
+
+        .copy-btn {
+            background-color: rgba(0, 0, 0, 0.4);
+            color: #f8f8f2;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .copy-btn:hover {
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+    </style>
+</head>
+<body class="bg-stone-50">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-full md:w-1/4 lg:w-1/5 xl:w-1/6 p-4 md:p-6 bg-white border-r border-stone-200 md:h-screen md:sticky top-0 overflow-y-auto text-left">
+            <h1 class="text-2xl font-bold text-teal-700 mb-2"><img src="../assets/udemy_userAPI-logo.png" alt="" title="Logo"></h1>
+            <p class="text-sm text-stone-500">v0.3.12</p>
+            <div class="flex items-center space-x-2 mb-4">Apoie o projeto
+                <a href="https://paulocesar-dev404.github.io/me-apoiando-online/" target="_blank"><img src="../assets/donate.webp" height="50px" width="50px" class="inline-block" title="Apoie o projeto"></a>
+            </div>
+            <input type="text" id="search-input" placeholder="Filtrar API..." class="w-full px-3 py-2 border border-stone-300 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-teal-500">
+            
+            <nav id="navigation-menu">
+                <ul class="space-y-1">
+                    <li><a href="#" class="nav-link block px-3 py-2 rounded-md text-stone-700 hover:bg-stone-100" data-target="visao-geral">Visão Geral</a></li>
+                    <li><a href="#" class="nav-link block px-3 py-2 rounded-md text-stone-700 hover:bg-stone-100" data-target="instalacao">Instalação</a></li>
+                    <li>
+                        <a href="#" class="nav-link block px-3 py-2 rounded-md text-stone-700 hover:bg-stone-100" data-target="uso-basico-intro">Uso Básico</a>
+                        <ul class="ml-4 space-y-1">
+                            <li><a href="#" class="nav-link block px-3 py-2 rounded-md text-stone-600 hover:bg-stone-100" data-target="autenticacao-uso">Autenticação</a></li>
+                            <li><a href="#" class="nav-link block px-3 py-2 rounded-md text-stone-600 hover:bg-stone-100" data-target="obter-cursos-uso">Obter Cursos</a></li>
+                            <li><a href="#" class="nav-link block px-3 py-2 rounded-md text-stone-600 hover:bg-stone-100" data-target="obter-detalhes-curso-uso">Obter Detalhes de um Curso</a></li>
+                            <li><a href="#" class="nav-link block px-3 py-2 rounded-md text-stone-600 hover:bg-stone-100" data-target="obter-aulas-uso">Obter Aulas e Seus Detalhes</a></li>
+                         
+                        </ul>
+                    </li>
+                    <li>
+                        <h3 class="text-sm font-semibold text-stone-500 uppercase tracking-wider px-3 mt-4 mb-2">Referência da API</h3>
+                        <ul class="space-y-1" id="api-nav-list">
+                            <li><a href="#" class="nav-link block px-3 py-2 rounded-md text-stone-600 hover:bg-stone-100" data-target="mod-udemy">udemy.py</a></li>
+                            <li><a href="#" class="nav-link block px-3 py-2 rounded-md text-stone-600 hover:bg-stone-100" data-target="mod-authenticate">authenticate.py</a></li>
+                            <li><a href="#" class="nav-link block px-3 py-2 rounded-md text-stone-600 hover:bg-stone-100" data-target="mod-sections">sections.py</a></li>
+                            <li><a href="#" class="nav-link block px-3 py-2 rounded-md text-stone-600 hover:bg-stone-100" data-target="mod-api">api.py</a></li>
+                            <li><a href="#" class="nav-link block px-3 py-2 rounded-md text-stone-600 hover:bg-stone-100" data-target="mod-bultins">bultins.py</a></li>
+                            <li><a href="#" class="nav-link block px-3 py-2 rounded-md text-stone-600 hover:bg-stone-100" data-target="mod-exeptions">exeptions.py</a></li>
+                        </ul>
+                    </li>
+                     <li><a href="#" class="nav-link block px-3 py-2 rounded-md text-stone-700 hover:bg-stone-100" data-target="contribuicao">Contribuição</a></li>
+                     <li><a href="#" class="nav-link block px-3 py-2 rounded-md text-stone-700 hover:bg-stone-100" data-target="changelog">Changelog</a></li>
+                     <li><a href="#" class="nav-link block px-3 py-2 rounded-md text-stone-700 hover:bg-stone-100" data-target="licenca">Licença</a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="w-full md:w-3/4 lg:w-4/5 xl:w-5/6 p-6 md:p-10">
+            <div id="visao-geral" class="content-section">
+                <h2 class="text-3xl font-bold text-stone-800 mb-4">Visão Geral</h2>
+                <p class="text-lg text-stone-600 mb-6">A <code>udemy-userAPI</code> facilita o acesso programático a informações de cursos da Udemy, simulando o comportamento do navegador para aceder e renderizar os cursos. É ideal para utilizadores que desejam analisar os seus cursos inscritos, gerir recursos ou automatizar tarefas relacionadas com o conteúdo dos cursos.</p>
+                
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                    <h3 class="text-xl font-semibold text-stone-700 mb-4">Funcionalidades Principais</h3>
+                    <ul class="list-disc list-inside space-y-2 text-stone-600">
+                        <li>Autenticação na Udemy (via email/senha, cookies diretos ou login sem senha com OTP).</li>
+                        <li>Listagem de todos os cursos nos quais o utilizador está inscrito.</li>
+                        <li>Obtenção de detalhes abrangentes de um curso específico (título, instrutores, capítulos, aulas, quizzes, recursos adicionais).</li>
+                        <li>Acesso a informações de aulas individuais, incluindo tipo de asset (vídeo, artigo, quiz), fontes de mídia, legendas, URLs de download e recursos.</li>
+                        <li>Capacidade de lidar com conteúdo protegido por DRM, extraindo chaves de licença.</li>
+                    </ul>
+                </div>
+
+                 <div class="mt-8">
+                    <h3 class="text-xl font-semibold text-stone-700 mb-4">Arquitetura da Biblioteca</h3>
+                    <p class="text-stone-600 mb-4">A biblioteca é modular. A classe principal `Udemy` serve como fachada, utilizando outros módulos para funcionalidades específicas como autenticação e obtenção de dados.</p>
+                    <div class="flex flex-col md:flex-row gap-4 text-center text-sm">
+                        <div class="flex-1 p-4 bg-teal-50 border-2 border-dashed border-teal-200 rounded-lg">
+                            <h4 class="font-bold text-teal-800">Udemy (Fachada)</h4>
+                            <p class="text-teal-600 text-xs">Ponto de entrada principal</p>
+                        </div>
+                        <div class="self-center text-2xl text-stone-400 mx-2">&rarr;</div>
+                        <div class="flex-1 grid grid-cols-2 gap-4">
+                            <div class="p-3 bg-sky-50 border border-sky-200 rounded-lg">
+                                <h4 class="font-semibold text-sky-800">Authenticate</h4>
+                                <p class="text-sky-600 text-xs">Gestão de Login</p>
+                            </div>
+                            <div class="p-3 bg-indigo-50 border border-indigo-200 rounded-lg">
+                                <h4 class="font-semibold text-indigo-800">Sections</h4>
+                                <p class="text-indigo-600 text-xs">Obtenção de Cursos</p>
+                            </div>
+                            <div class="p-3 bg-rose-50 border border-rose-200 rounded-lg col-span-2">
+                                <h4 class="font-semibold text-rose-800">API & Bultins</h4>
+                                <p class="text-rose-600 text-xs">Funções Auxiliares e Modelos de Dados</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="instalacao" class="content-section">
+                <h2 class="text-3xl font-bold text-stone-800 mb-4">Instalação</h2>
+                <p class="text-lg text-stone-600 mb-6">A <code>udemy-userAPI</code> pode ser instalada diretamente via pip. Certifique-se de que tem o Python e o pip instalados no seu sistema.</p>
+                <div class="code-container relative">
+                    <pre><code class="language-bash"><span class="token-keyword">pip</span> <span class="token-function">install</span> udemy-userAPI</code></pre>
+                    <button class="copy-btn absolute top-2 right-2 text-xs font-semibold py-1 px-2 rounded">Copiar</button>
+                </div>
+            </div>
+
+            <div id="uso-basico-intro" class="content-section">
+                <h2 class="text-3xl font-bold text-stone-800 mb-4">Uso Básico</h2>
+                <p class="text-lg text-stone-600 mb-6">Esta secção irá guiá-lo através das funcionalidades essenciais da <code>udemy-userAPI</code>, desde a autenticação segura na sua conta Udemy até à exploração detalhada dos seus cursos e aulas. Cada passo é explicado de forma clara e com exemplos práticos para que possa começar a utilizar a biblioteca sem dificuldades.</p>
+            </div>
+
+            <div id="autenticacao-uso" class="content-section">
+                <h3 class="text-2xl font-semibold text-stone-700 mb-4 mt-8">1. Como Autenticar-se na Udemy</h3>
+                <p class="text-stone-600 mb-4">Para aceder aos seus cursos e dados na Udemy, a biblioteca precisa de se autenticar na sua conta. A classe <code>UdemyAuth</code> é a sua ferramenta para gerir este processo de forma segura e flexível. É uma boa prática verificar sempre se já está logado para evitar tentativas de login desnecessárias.</p>
+                
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-6">
+                    <h4 class="text-xl font-bold text-stone-700 mb-2">Login com Email e Senha (Método Padrão)</h4>
+                    <p class="text-stone-600 mb-4">Este é o método mais comum. A biblioteca simula o processo de login do navegador. Lembre-se de que as suas credenciais são sensíveis e devem ser tratadas com segurança (evite colocá-las diretamente no código para produção).</p>
+                    <div class="code-container relative">
+                        <pre><code class="language-python"><span class="token-keyword">from</span> udemy_userAPI <span class="token-keyword">import</span> UdemyAuth, LoginException
+
+<span class="token-variable">auth</span> <span class="token-operator">=</span> <span class="token-class">UdemyAuth</span>()
+<span class="token-keyword">try</span>:
+    <span class="token-keyword">if</span> <span class="token-keyword">not</span> <span class="token-variable">auth</span>.<span class="token-function">verif_login</span>():
+        <span class="token-function">print</span>(<span class="token-string">"Sessão não encontrada ou expirada. A iniciar sessão..."</span>)
+        <span class="token-variable">email_udemy</span> <span class="token-operator">=</span> <span class="token-function">input</span>(<span class="token-string">"Digite seu e-mail da Udemy: "</span>)
+        <span class="token-variable">senha_udemy</span> <span class="token-operator">=</span> <span class="token-function">input</span>(<span class="token-string">"Digite sua senha da Udemy: "</span>)
+        <span class="token-variable">auth</span>.<span class="token-function">login</span>(<span class="token-variable">email_udemy</span>, <span class="token-variable">senha_udemy</span>)
+        <span class="token-function">print</span>(<span class="token-string">"Login bem-sucedido! Seus cookies de sessão foram salvos."</span>)
+    <span class="token-keyword">else</span>:
+        <span class="token-function">print</span>(<span class="token-string">"Já está logado! Sessão válida encontrada."</span>)
+<span class="token-keyword">except</span> <span class="token-exception">LoginException</span> <span class="token-keyword">as</span> <span class="token-variable">e</span>:
+    <span class="token-function">print</span>(<span class="token-string">f"Erro de login: {e}"</span>)
+<span class="token-keyword">except</span> <span class="token-exception">Exception</span> <span class="token-keyword">as</span> <span class="token-variable">e</span>:
+    <span class="token-function">print</span>(<span class="token-string">f"Ocorreu um erro inesperado durante a autenticação: {e}"</span>)
+</code></pre>
+                        <button class="copy-btn absolute top-2 right-2 text-xs font-semibold py-1 px-2 rounded">Copiar</button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-6">
+                    <h4 class="text-xl font-bold text-stone-700 mb-2">Login com Autenticação de Dois Fatores (2FA/Passwordless)</h4>
+                    <p class="text-stone-600 mb-4">Se a sua conta Udemy tem 2FA ativado (login sem senha), pode usar este método. A biblioteca irá enviar um código para o seu email e pedir que o insira para completar o login.</p>
+                    <div class="code-container relative">
+                        <pre><code class="language-python"><span class="token-keyword">from</span> udemy_userAPI <span class="token-keyword">import</span> UdemyAuth, LoginException
+
+<span class="token-variable">auth_2fa</span> <span class="token-operator">=</span> <span class="token-class">UdemyAuth</span>()
+
+<span class="token-keyword">def</span> <span class="token-function">obter_otp_do_usuario</span>():
+    <span class="token-string">"""Função de callback para obter o OTP do usuário."""</span>
+    <span class="token-keyword">return</span> <span class="token-function">input</span>(<span class="token-string">"Digite o código de 6 dígitos enviado ao seu e-mail: "</span>)
+
+<span class="token-keyword">try</span>:
+    <span class="token-keyword">if</span> <span class="token-keyword">not</span> <span class="token-variable">auth_2fa</span>.<span class="token-function">verif_login</span>():
+        <span class="token-function">print</span>(<span class="token-string">"Sessão não encontrada ou expirada. Iniciando login sem senha..."</span>)
+        <span class="token-variable">email_udemy_2fa</span> <span class="token-operator">=</span> <span class="token-function">input</span>(<span class="token-string">"Digite seu e-mail da Udemy para 2FA: "</span>)
+        <span class="token-variable">auth_2fa</span>.<span class="token-function">login_passwordless</span>(<span class="token-variable">email_udemy_2fa</span>, <span class="token-variable">otp_callback</span><span class="token-operator">=</span><span class="token-function">obter_otp_do_usuario</span>)
+        <span class="token-function">print</span>(<span class="token-string">"Login sem senha bem-sucedido!"</span>)
+    <span class="token-keyword">else</span>:
+        <span class="token-function">print</span>(<span class="token-string">"Já está logado! Sessão válida encontrada."</span>)
+<span class="token-keyword">except</span> <span class="token-exception">LoginException</span> <span class="token-keyword">as</span> <span class="token-variable">e</span>:
+    <span class="token-function">print</span>(<span class="token-string">f"Erro de login 2FA: {e}"</span>)
+<span class="token-keyword">except</span> <span class="token-exception">Exception</span> <span class="token-keyword">as</span> <span class="token-variable">e</span>:
+    <span class="token-function">print</span>(<span class="token-string">f"Ocorreu um erro inesperado durante a autenticação 2FA: {e}"</span>)
+</code></pre>
+                        <button class="copy-btn absolute top-2 right-2 text-xs font-semibold py-1 px-2 rounded">Copiar</button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-6">
+                    <h4 class="text-xl font-bold text-stone-700 mb-2">Gestão de Cookies (Avançado)</h4>
+                    <p class="text-stone-600 mb-4">Se já tem cookies de sessão da Udemy (por exemplo, extraídos do seu navegador), pode usá-los diretamente para autenticação. A biblioteca também permite remover os cookies guardados.</p>
+                    <div class="code-container relative">
+                        <pre><code class="language-python"><span class="token-keyword">from</span> udemy_userAPI <span class="token-keyword">import</span> UdemyAuth, LoginException
+<span class="token-keyword">import</span> os
+
+<span class="token-variable">auth_cookies</span> <span class="token-operator">=</span> <span class="token-class">UdemyAuth</span>()
+<span class="token-variable">cookies_file_path</span> <span class="token-operator">=</span> <span class="token-string">"udemy_cookies.json"</span> <span class="token-comment"># Exemplo de nome de arquivo</span>
+
+<span class="token-comment"># Exemplo: Login direto com uma string de cookies</span>
+<span class="token-comment"># Lembre-se de que esta string deve ser obtida de uma sessão válida do navegador.</span>
+<span class="token-variable">sua_string_de_cookies</span> <span class="token-operator">=</span> <span class="token-string">"client_id=...; access_token=...;"</span> <span class="token-comment"># Substitua pelos seus cookies reais</span>
+<span class="token-keyword">try</span>:
+    <span class="token-variable">auth_cookies</span>.<span class="token-function">login_direct_cookies</span>(<span class="token-variable">sua_string_de_cookies</span>)
+    <span class="token-function">print</span>(<span class="token-string">"Login com cookies diretos bem-sucedido!"</span>)
+<span class="token-keyword">except</span> <span class="token-exception">LoginException</span> <span class="token-keyword">as</span> <span class="token-variable">e</span>:
+    <span class="token-function">print</span>(<span class="token-string">f"Erro ao tentar login com cookies diretos: {e}"</span>)
+
+<span class="token-comment"># Carregar cookies salvos (se existir uma sessão salva)</span>
+<span class="token-variable">loaded_cookies</span> <span class="token-operator">=</span> <span class="token-variable">auth_cookies</span>.<span class="token-function">load_cookies</span>()
+<span class="token-function">print</span>(<span class="token-string">f"Cookies carregados: {loaded_cookies[:50]}..."</span>) <span class="token-comment"># Mostra apenas o início</span>
+
+<span class="token-comment"># Remover cookies salvos de uma sessão (para logout ou nova sessão)</span>
+<span class="token-comment"># auth_cookies.remove_cookies()</span>
+<span class="token-comment"># print("Cookies de sessão removidos.")</span>
+</code></pre>
+                        <button class="copy-btn absolute top-2 right-2 text-xs font-semibold py-1 px-2 rounded">Copiar</button>
+                    </div>
+                </div>
+                <div id="information">
+
+                    <p>Para se obter os cookies você pode utilizar as opções de desenvolvedor no navedaor <strong>-></strong> (f12) <strong>-></strong> rede <strong>-></strong> filtre por <strong>https://www.udemy.com/api-2.0/</strong> <strong>-></strong>só copiar os cookies de uma requsisição.</p>
+
+
+                </div>
+            </div>
+
+            <div id="obter-cursos-uso" class="content-section">
+                <h3 class="text-2xl font-semibold text-stone-700 mb-4 mt-8">2. Como Obter a Lista dos Seus Cursos</h3>
+                <p class="text-stone-600 mb-4">Depois de se autenticar com sucesso, o próximo passo é aceder à lista dos cursos nos quais está inscrito. A classe <code>Udemy</code> é a sua porta de entrada para todas as informações sobre os cursos.</p>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-6">
+                    <h4 class="text-xl font-bold text-stone-700 mb-2">Listar Todos os Seus Cursos Inscritos</h4>
+                    <p class="text-stone-600 mb-4">O método <code>my_subscribed_courses()</code> irá buscar todos os cursos que aparecem na sua página "Meus Cursos" na Udemy, sejam eles comprados individualmente ou parte de um plano de assinatura.</p>
+                    <div class="code-container relative">
+                        <pre><code class="language-python"><span class="token-keyword">from</span> udemy_userAPI <span class="token-keyword">import</span> Udemy
+
+<span class="token-comment"># Certifique-se de que já fez o login antes de usar a classe Udemy</span>
+<span class="token-variable">udemy</span> <span class="token-operator">=</span> <span class="token-class">Udemy</span>()
+<span class="token-keyword">try</span>:
+    <span class="token-variable">todos_os_cursos</span> <span class="token-operator">=</span> <span class="token-variable">udemy</span>.<span class="token-function">my_subscribed_courses</span>()
+    <span class="token-function">print</span>(<span class="token-string">f"Você tem {len(todos_os_cursos)} cursos inscritos no total."</span>)
+    
+    <span class="token-keyword">if</span> <span class="token-variable">todos_os_cursos</span>:
+        <span class="token-function">print</span>(<span class="token-string">"\nInformações dos primeiros 3 cursos:"</span>)
+        <span class="token-keyword">for</span> <span class="token-variable">i</span>, <span class="token-variable">curso</span> <span class="token-keyword">in</span> <span class="token-function">enumerate</span>(<span class="token-variable">todos_os_cursos</span>[:<span class="token-number">3</span>]):
+            <span class="token-function">print</span>(<span class="token-string">f"- Título: {curso.get('title')}"</span>)
+            <span class="token-function">print</span>(<span class="token-string">f"  ID do Curso: {curso.get('id')}"</span>)
+            <span class="token-function">print</span>(<span class="token-string">f"  Percentual de Conclusão: {curso.get('completion_ratio', 0) * 100:.2f}%"</span>)
+<span class="token-keyword">except</span> <span class="token-exception">Exception</span> <span class="token-keyword">as</span> <span class="token-variable">e</span>:
+    <span class="token-function">print</span>(<span class="token-string">f"Ocorreu um erro ao listar seus cursos: {e}"</span>)
+</code></pre>
+                        <button class="copy-btn absolute top-2 right-2 text-xs font-semibold py-1 px-2 rounded">Copiar</button>
+                    </div>
+                    <p class="text-stone-600 mt-4">**Dica:** Se você possui uma assinatura (Personal Plan) e deseja ver apenas os cursos incluídos nela, use <code>udemy.my_subscribed_courses_by_plan()</code>.</p>
+                </div>
+            </div>
+
+            <div id="obter-detalhes-curso-uso" class="content-section">
+                <h3 class="text-2xl font-semibold text-stone-700 mb-4 mt-8">3. Como Obter Detalhes Completos de um Curso</h3>
+                <p class="text-stone-600 mb-4">A lista de cursos que obteve anteriormente fornece informações básicas. Para mergulhar fundo e ver todos os capítulos, aulas, instrutores, recursos e muito mais de um curso específico, precisa de obter os seus detalhes completos. Para isso, usará o ID do curso.</p>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-6">
+                    <h4 class="text-xl font-bold text-stone-700 mb-2">Aceder a Informações Detalhadas do Curso</h4>
+                    <p class="text-stone-600 mb-4">O método estático <code>Udemy.get_details_course(ID_DO_CURSO)</code> retorna um objeto <code>Course</code>. Este objeto é uma representação rica do curso, permitindo-lhe aceder a diversas propriedades como título, descrição, lista de instrutores, número de aulas, e muito mais.</p>
+                    <div class="code-container relative">
+                        <pre><code class="language-python"><span class="token-keyword">from</span> udemy_userAPI <span class="token-keyword">import</span> Udemy
+
+<span class="token-comment"># Substitua este ID pelo ID de um dos seus cursos (obtido do passo anterior)</span>
+<span class="token-variable">id_do_curso_exemplo</span> <span class="token-operator">=</span> <span class="token-number">123456</span> 
+
+<span class="token-keyword">try</span>:
+    <span class="token-variable">detalhes_do_curso</span> <span class="token-operator">=</span> <span class="token-class">Udemy</span>.<span class="token-function">get_details_course</span>(<span class="token-variable">id_do_curso_exemplo</span>)
+    
+    <span class="token-function">print</span>(<span class="token-string">f"\n--- Detalhes do Curso: {detalhes_do_curso.title_course} ---"</span>)
+    <span class="token-function">print</span>(<span class="token-string">f"Descrição (início): {detalhes_do_curso.description_course[:150]}..."</span>)
+    <span class="token-function">print</span>(<span class="token-string">f"Categoria Principal: {detalhes_do_curso.primary_category}"</span>)
+    <span class="token-function">print</span>(<span class="token-string">f"Duração Estimada (minutos): {detalhes_do_curso.estimated_content_length}"</span>)
+    <span class="token-function">print</span>(<span class="token-string">f"Número total de Aulas: {detalhes_do_curso.count_lectures}"</span>)
+    <span class="token-function">print</span>(<span class="token-string">f"Número total de Capítulos: {detalhes_do_curso.count_chapters}"</span>)
+    
+    <span class="token-comment"># Informações sobre os Instrutores</span>
+    <span class="token-keyword">if</span> <span class="token-variable">detalhes_do_curso</span>.<span class="token-variable">instructors</span>:
+        <span class="token-function">print</span>(<span class="token-string">"\nInstrutores:"</span>)
+        <span class="token-keyword">for</span> <span class="token-variable">instrutor</span> <span class="token-keyword">in</span> <span class="token-variable">detalhes_do_curso</span>.<span class="token-variable">instructors</span>:
+            <span class="token-function">print</span>(<span class="token-string">f"- {instrutor.get('display_name')} ({instrutor.get('job_title')})"</span>)
+
+    <span class="token-comment"># Exemplo de como aceder à lista de aulas (resumo)</span>
+    <span class="token-keyword">if</span> <span class="token-variable">detalhes_do_curso</span>.<span class="token-variable">get_lectures</span>:
+        <span class="token-function">print</span>(<span class="token-string">f"\nPrimeiras 5 aulas (resumo):"</span>)
+        <span class="token-keyword">for</span> <span class="token-variable">i</span>, <span class="token-variable">aula_resumo</span> <span class="token-keyword">in</span> <span class="token-function">enumerate</span>(<span class="token-variable">detalhes_do_curso</span>.<span class="token-variable">get_lectures</span>[:<span class="token-number">5</span>]):
+            <span class="token-function">print</span>(<span class="token-string">f"  - Capítulo {aula_resumo.get('section')}: {aula_resumo.get('title')} (ID: {aula_resumo.get('lecture_id')}, Tipo: {aula_resumo.get('asset_type')})"</span>)
+
+<span class="token-keyword">except</span> <span class="token-exception">Exception</span> <span class="token-keyword">as</span> <span class="token-variable">e</span>:
+    <span class="token-function">print</span>(<span class="token-string">f"Ocorreu um erro ao obter detalhes do curso {id_do_curso_exemplo}: {e}"</span>)
+</code></pre>
+                        <button class="copy-btn absolute top-2 right-2 text-xs font-semibold py-1 px-2 rounded">Copiar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="obter-aulas-uso" class="content-section">
+                <h3 class="text-2xl font-semibold text-stone-700 mb-4 mt-8">4. Como Obter Aulas e Seus Detalhes Específicos</h3>
+                <p class="text-stone-600 mb-4">Um curso é composto por várias aulas, e cada aula pode ser um vídeo, um artigo, um quiz, etc. A <code>udemy-userAPI</code> permite-lhe listar todas as aulas de um curso e, mais importante, obter detalhes muito específicos de cada uma delas, como o conteúdo do vídeo, o texto de um artigo, ou as perguntas de um quiz.</p>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-6">
+                    <h4 class="text-xl font-bold text-stone-700 mb-2">Listar Aulas de um Curso</h4>
+                    <p class="text-stone-600 mb-4">Depois de ter o objeto <code>Course</code> (do passo anterior), pode aceder à propriedade <code>get_lectures</code> para obter uma lista de todos os resumos das aulas. Esta lista é útil para ter uma visão geral e encontrar o ID da aula que deseja explorar em detalhe.</p>
+                    <div class="code-container relative">
+                        <pre><code class="language-python"><span class="token-keyword">from</span> udemy_userAPI <span class="token-keyword">import</span> Udemy
+
+<span class="token-variable">id_do_curso_para_aulas</span> <span class="token-operator">=</span> <span class="token-number">123456</span> <span class="token-comment"># Substitua pelo ID de um dos seus cursos</span>
+
+<span class="token-keyword">try</span>:
+    <span class="token-variable">detalhes_do_curso_aulas</span> <span class="token-operator">=</span> <span class="token-class">Udemy</span>.<span class="token-function">get_details_course</span>(<span class="token-variable">id_do_curso_para_aulas</span>)
+    
+    <span class="token-keyword">if</span> <span class="token-variable">detalhes_do_curso_aulas</span>.<span class="token-variable">get_lectures</span>:
+        <span class="token-function">print</span>(<span class="token-string">f"\nListando todas as aulas do curso '{detalhes_do_curso_aulas.title_course}':"</span>)
+        <span class="token-keyword">for</span> <span class="token-variable">aula_resumo</span> <span class="token-keyword">in</span> <span class="token-variable">detalhes_do_curso_aulas</span>.<span class="token-variable">get_lectures</span>:
+            <span class="token-function">print</span>(<span class="token-string">f"- Capítulo: {aula_resumo.get('section')}, Título: {aula_resumo.get('title')} (ID: {aula_resumo.get('lecture_id')}, Tipo: {aula_resumo.get('asset_type')})"</span>)
+    <span class="token-keyword">else</span>:
+        <span class="token-function">print</span>(<span class="token-string">"Nenhuma aula encontrada para este curso."</span>)
+
+<span class="token-keyword">except</span> <span class="token-exception">Exception</span> <span class="token-keyword">as</span> <span class="token-variable">e</span>:
+    <span class="token-function">print</span>(<span class="token-string">f"Ocorreu um erro ao listar as aulas: {e}"</span>)
+</code></pre>
+                        <button class="copy-btn absolute top-2 right-2 text-xs font-semibold py-1 px-2 rounded">Copiar</button>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-6">
+                    <h4 class="text-xl font-bold text-stone-700 mb-2">Obter Detalhes de uma Aula Específica</h4>
+                    <p class="text-stone-600 mb-4">Com o ID de uma aula (obtido do passo anterior), pode usar o método <code>get_details_lecture(ID_DA_AULA)</code> do seu objeto <code>Course</code> para obter um objeto <code>Lecture</code>. Este objeto contém todas as informações disponíveis para aquela aula específica, adaptadas ao seu tipo (vídeo, artigo, quiz).</p>
+                    <div class="code-container relative">
+                        <pre><code class="language-python"><span class="token-keyword">from</span> udemy_userAPI <span class="token-keyword">import</span> Udemy
+
+<span class="token-variable">id_do_curso_aula_detalhe</span> <span class="token-operator">=</span> <span class="token-number">123456</span> <span class="token-comment"># Substitua pelo ID do curso da aula</span>
+<span class="token-variable">id_da_aula_exemplo</span> <span class="token-operator">=</span> <span class="token-number">789012</span> <span class="token-comment"># Substitua pelo ID da aula que deseja detalhar</span>
+
+<span class="token-keyword">try</span>:
+    <span class="token-variable">detalhes_do_curso_parent</span> <span class="token-operator">=</span> <span class="token-class">Udemy</span>.<span class="token-function">get_details_course</span>(<span class="token-variable">id_do_curso_aula_detalhe</span>)
+    <span class="token-variable">aula_detalhada</span> <span class="token-operator">=</span> <span class="token-variable">detalhes_do_curso_parent</span>.<span class="token-function">get_details_lecture</span>(<span class="token-variable">id_da_aula_exemplo</span>)
+    
+    <span class="token-function">print</span>(<span class="token-string">f"\n--- Detalhes da Aula: {aula_detalhada.get_description[:100]}... ---"</span>)
+    <span class="token-function">print</span>(<span class="token-string">f"ID da Aula: {aula_detalhada.get_lecture_id}"</span>)
+    <span class="token-function">print</span>(<span class="token-string">f"Tipo de Conteúdo: {aula_detalhada.get_asset_type}"</span>)
+    <span class="token-function">print</span>(<span class="token-string">f"É uma aula gratuita? {'Sim' if aula_detalhada.is_free else 'Não'}"</span>)
+
+    <span class="token-keyword">if</span> <span class="token-variable">aula_detalhada</span>.<span class="token-variable">get_asset_type</span>.<span class="token-function">lower</span>() <span class="token-operator">==</span> <span class="token-string">'video'</span>:
+        <span class="token-function">print</span>(<span class="token-string">"\nDetalhes do Vídeo:"</span>)
+        <span class="token-function">print</span>(<span class="token-string">f"Token de Licença de Mídia: {aula_detalhada.get_media_license_token}"</span>)
+        <span class="token-keyword">if</span> <span class="token-variable">aula_detalhada</span>.<span class="token-variable">get_media_sources</span>:
+            <span class="token-function">print</span>(<span class="token-string">f"  Fontes de vídeo disponíveis: {len(aula_detalhada.get_media_sources)} opções."</span>)
+            <span class="token-function">print</span>(<span class="token-string">f"  Exemplo de URL de vídeo: {aula_detalhada.get_media_sources[0].get('src')[:80]}..."</span>)
+        <span class="token-keyword">if</span> <span class="token-variable">aula_detalhada</span>.<span class="token-variable">get_captions</span>:
+            <span class="token-function">print</span>(<span class="token-string">f"  Legendas disponíveis para os idiomas: {aula_detalhada.get_captions.languages()}"</span>)
+            <span class="token-comment"># Para obter o conteúdo de uma legenda específica:</span>
+            <span class="token-comment"># pt_caption_content = aula_detalhada.get_captions.get_lang('pt').content</span>
+            <span class="token-comment"># print(f"  Conteúdo da legenda em PT (início): {pt_caption_content[:100]}...")</span>
+        <span class="token-keyword">if</span> <span class="token-variable">aula_detalhada</span>.<span class="token-function">course_is_drmed</span>():
+            <span class="token-function">print</span>(<span class="token-string">"  Esta aula é protegida por DRM. Chaves de licença podem ser extraídas."</span>)
+
+    <span class="token-keyword">elif</span> <span class="token-variable">aula_detalhada</span>.<span class="token-variable">get_asset_type</span>.<span class="token-function">lower</span>() <span class="token-operator">==</span> <span class="token-string">'article'</span>:
+        <span class="token-function">print</span>(<span class="token-string">"\nDetalhes do Artigo:"</span>)
+        <span class="token-variable">conteudo_do_artigo</span> <span class="token-operator">=</span> <span class="token-variable">aula_detalhada</span>.<span class="token-variable">get_articles</span>
+        <span class="token-function">print</span>(<span class="token-string">f"  Conteúdo (HTML, início): {conteudo_do_artigo[:200]}..."</span>)
+
+    <span class="token-keyword">elif</span> <span class="token-variable">aula_detalhada</span>.<span class="token-variable">get_asset_type</span>.<span class="token-function">lower</span>() <span class="token-operator">==</span> <span class="token-string">'quiz'</span>:
+        <span class="token-function">print</span>(<span class="token-string">"\nDetalhes do Quiz:"</span>)
+        <span class="token-variable">objeto_quiz</span> <span class="token-operator">=</span> <span class="token-variable">aula_detalhada</span>.<span class="token-function">quiz_object</span>()
+        <span class="token-function">print</span>(<span class="token-string">f"  Título do Quiz: {objeto_quiz.title}"</span>)
+        <span class="token-function">print</span>(<span class="token-string">f"  Descrição: {objeto_quiz.description}"</span>)
+        <span class="token-function">print</span>(<span class="token-string">f"  Número de Perguntas: {objeto_quiz.num_assessments}"</span>)
+        <span class="token-function">print</span>(<span class="token-string">f"  Percentual para Aprovação: {objeto_quiz.pass_percent}%"</span>)
+        <span class="token-comment"># O conteúdo das perguntas pode ser acedido via objeto_quiz.content()</span>
+
+    <span class="token-keyword">if</span> <span class="token-variable">aula_detalhada</span>.<span class="token-variable">get_resources</span>:
+        <span class="token-function">print</span>(<span class="token-string">"\nRecursos Adicionais (Ficheiros para Download):"</span>)
+        <span class="token-keyword">for</span> <span class="token-variable">recurso</span> <span class="token-keyword">in</span> <span class="token-variable">aula_detalhada</span>.<span class="token-variable">get_resources</span>:
+            <span class="token-function">print</span>(<span class="token-string">f"- Título: {recurso.get('title-file')}, Link Externo: {recurso.get('external_link')}"</span>)
+
+<span class="token-keyword">except</span> <span class="token-exception">Exception</span> <span class="token-keyword">as</span> <span class="token-variable">e</span>:
+    <span class="token-function">print</span>(<span class="token-string">f"Ocorreu um erro ao explorar a aula {id_da_aula_exemplo}: {e}"</span>)
+</code></pre>
+                        <button class="copy-btn absolute top-2 right-2 text-xs font-semibold py-1 px-2 rounded">Copiar</button>
+                    </div>
+                </div>
+            </div>
+
+            
+            <div id="mod-udemy" class="content-section">
+                <h2 class="text-3xl font-bold text-stone-800 mb-2">Módulo: <code>udemy.py</code></h2>
+                <p class="text-lg text-stone-600 mb-6">O ponto de entrada principal da biblioteca.</p>
+                
+                <div class="api-item bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-6">
+                    <h4 class="text-xl font-bold text-stone-700 mb-2">Classe <code>Udemy</code></h4>
+                    <p class="text-stone-600 mb-4">Wrapper para API de utilizador da plataforma Udemy.</p>
+                    <div class="code-container relative">
+                        <pre><code class="language-python"><span class="token-keyword">class</span> <span class="token-class">Udemy</span>:
+    <span class="token-keyword">def</span> <span class="token-function">__init__</span>(<span class="token-keyword">self</span>):
+        <span class="token-string">"""
+        Inicializa o objeto Udemy.
+        Raises: LoginException: Se a sessão estiver expirada.
+        """</span></code></pre>
+                        <button class="copy-btn absolute top-2 right-2 text-xs font-semibold py-1 px-2 rounded">Copiar</button>
+                    </div>
+                </div>
+
+                <div class="api-item bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-6">
+                    <h4 class="text-xl font-bold text-stone-700 mb-2">Métodos Estáticos</h4>
+                    <div class="space-y-4">
+                        <p><code>my_subscribed_courses_by_plan() -> list[dict]</code>: Obtém os cursos inscritos através de planos (assinatura).</p>
+                        <p><code>my_subscribed_courses() -> list[dict]</code>: Obtém todos os cursos inscritos (padrão e de planos).</p>
+                        <p><code>get_details_course(course_id: int) -> Course</code>: Obtém detalhes de um curso através do ID.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="mod-authenticate" class="content-section">
+                <h2 class="text-3xl font-bold text-stone-800 mb-2">Módulo: <code>authenticate.py</code></h2>
+                <p class="text-lg text-stone-600 mb-6">Responsável pela gestão de sessões e autenticação do utilizador.</p>
+
+                <div class="api-item bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-6">
+                    <h4 class="text-xl font-bold text-stone-700 mb-2">Classe <code>UdemyAuth</code></h4>
+                    <p class="text-stone-600 mb-4">Autenticação na plataforma Udemy de maneira segura.</p>
+                    <div class="space-y-4">
+                        <p><code>verif_login() -> bool</code>: Verifica se o utilizador está logado.</p>
+                        <p><code>login(email, password, locale='pt_BR')</code>: Efetua login com email e senha.</p>
+                        <p><code>login_direct_cookies(cookies)</code>: Efetua login usando uma string ou ficheiro de cookies.</p>
+                        <p><code>load_cookies() -> str</code>: Carrega cookies e retorna-os como string.</p>
+                        <p><code>remove_cookies()</code>: Remove o ficheiro de cookies de sessão.</p>
+                        <p><code>login_passwordless(email, locale='pt_BR', otp_callback=None)</code>: Realiza login usando autenticação de dois fatores (2FA).</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="mod-sections" class="content-section">
+                 <h2 class="text-3xl font-bold text-stone-800 mb-2">Módulo: <code>sections.py</code></h2>
+                <p class="text-lg text-stone-600 mb-6">Contém funções para obter listas e detalhes de cursos.</p>
+
+                <div class="api-item bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-6">
+                    <h4 class="text-xl font-bold text-stone-700 mb-2">Funções</h4>
+                    <div class="space-y-4">
+                        <p><code>get_courses_plan(tipe: str) -> list</code>: Obtém uma lista de cursos com base no tipo de plano ('default' ou 'plan').</p>
+                        <p><code>get_details_courses(course_id: int) -> dict</code>: Obtém detalhes de um curso, com paginação automática.</p>
+                        <p><code>get_course_infor(course_id: int) -> dict</code>: Obtém informações gerais de um curso.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="mod-api" class="content-section">
+                 <h2 class="text-3xl font-bold text-stone-800 mb-2">Módulo: <code>api.py</code></h2>
+                <p class="text-lg text-stone-600 mb-6">Funções de baixo nível para interagir com a API da Udemy, incluindo DRM e processamento de dados.</p>
+                 <div class="api-item bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-6">
+                    <h4 class="text-xl font-bold text-stone-700 mb-2">Funções Notáveis</h4>
+                    <div class="space-y-4">
+                        <p><code>get_pssh(init_url)</code> e <code>extract(pssh, token)</code>: Funções para lidar com conteúdo protegido por DRM (Widevine).</p>
+                        <p><code>get_mpd_file(mpd_url)</code>: Obtém e processa manifestos MPEG-DASH.</p>
+                        <p><code>parser_chapters(results)</code>: Estrutura os dados do currículo em capítulos e aulas.</p>
+                        <p><code>get_links(course_id, lecture_id)</code>: Obtém dados de uma aula específica (vídeo/artigo).</p>
+                        <p><code>get_assessments(course_id, lecture_id)</code>: Obtém dados de um quiz.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="mod-bultins" class="content-section">
+                 <h2 class="text-3xl font-bold text-stone-800 mb-2">Módulo: <code>bultins.py</code></h2>
+                <p class="text-lg text-stone-600 mb-6">Define as classes de modelo de dados que representam as entidades da Udemy.</p>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="api-item bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h4 class="text-xl font-bold text-stone-700 mb-2">Classe <code>Course</code></h4>
+                        <p>Representa um curso completo, com acesso a título, instrutores, aulas, etc.</p>
+                    </div>
+                    <div class="api-item bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h4 class="text-xl font-bold text-stone-700 mb-2">Classe <code>Lecture</code></h4>
+                        <p>Representa uma aula individual, com acesso a descrição, tipo de asset, recursos, etc.</p>
+                    </div>
+                    <div class="api-item bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h4 class="text-xl font-bold text-stone-700 mb-2">Classe <code>Quiz</code></h4>
+                        <p>Representa um quiz, com acesso a título, descrição e conteúdo.</p>
+                    </div>
+                    <div class="api-item bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h4 class="text-xl font-bold text-stone-700 mb-2">Classes <code>Caption(s)</code></h4>
+                        <p>Gerem as legendas de uma aula, permitindo listar idiomas e obter o conteúdo.</p>
+                    </div>
+                    <div class="api-item bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h4 class="text-xl font-bold text-stone-700 mb-2">Classe <code>DRM</code></h4>
+                        <p>Lida com a extração de chaves de licença para conteúdo protegido.</p>
+                    </div>
+                     <div class="api-item bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                        <h4 class="text-xl font-bold text-stone-700 mb-2">Classe <code>Files</code></h4>
+                        <p>Gere os ficheiros para download associados a uma aula.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="mod-exeptions" class="content-section">
+                 <h2 class="text-3xl font-bold text-stone-800 mb-2">Módulo: <code>exeptions.py</code></h2>
+                <p class="text-lg text-stone-600 mb-6">Define as exceções personalizadas para um tratamento de erros claro e específico.</p>
+                <div class="api-item bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-6">
+                    <h4 class="text-xl font-bold text-stone-700 mb-2">Exceções</h4>
+                     <ul class="list-disc list-inside space-y-2 text-stone-600">
+                        <li><code>UdemyUserApiExceptions</code>: Erro genérico da biblioteca.</li>
+                        <li><code>Upstreamconnecterror</code>: Falha de conexão com o servidor da Udemy.</li>
+                        <li><code>UnhandledExceptions</code>: Erros não tratados.</li>
+                        <li><code>LoginException</code>: Erros específicos do processo de login.</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div id="changelog" class="content-section">
+                <h2 class="text-3xl font-bold text-stone-800 mb-4">Changelog</h2>
+                <div class="api-item bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-6">
+                    <h4 class="text-xl font-bold text-stone-700 mb-2">Versão 0.3.11</h4>
+                     <ul class="list-disc list-inside space-y-2 text-stone-600">
+                        <li>Lançamento inicial da documentação para PyPI.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="licenca" class="content-section">
+                <h2 class="text-3xl font-bold text-stone-800 mb-4">Licença</h2>
+                <div class="api-item bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-6">
+                    <p class="text-stone-600">Esta biblioteca está licenciada sob a licença MIT. Consulte o ficheiro <code>LICENSE</code> no repositório para mais detalhes.</p>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const contentSections = document.querySelectorAll('.content-section');
+            const searchInput = document.getElementById('search-input');
+            const apiNavList = document.getElementById('api-nav-list');
+            const apiNavItems = apiNavList.querySelectorAll('li');
+
+            function showContent(targetId) {
+                contentSections.forEach(section => {
+                    section.classList.remove('active');
+                });
+                navLinks.forEach(link => {
+                    link.classList.remove('active');
+                });
+
+                const targetSection = document.getElementById(targetId);
+                const targetLink = document.querySelector(`.nav-link[data-target="${targetId}"]`);
+
+                if (targetSection) {
+                    targetSection.classList.add('active');
+                }
+                if (targetLink) {
+                    targetLink.classList.add('active');
+                }
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const targetId = this.dataset.target;
+                    showContent(targetId);
+                });
+            });
+
+            searchInput.addEventListener('input', function(e) {
+                const searchTerm = e.target.value.toLowerCase();
+                apiNavItems.forEach(item => {
+                    const linkText = item.textContent.toLowerCase();
+                    if (linkText.includes(searchTerm)) {
+                        item.style.display = 'block';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+
+            document.querySelectorAll('.copy-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const pre = this.previousElementSibling;
+                    const code = pre.querySelector('code').innerText;
+                    
+                    const textarea = document.createElement('textarea');
+                    textarea.value = code;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    try {
+                        document.execCommand('copy');
+                        this.textContent = 'Copiado!';
+                    } catch (err) {
+                        console.error('Falha ao copiar texto: ', err);
+                        this.textContent = 'Erro';
+                    }
+                    document.body.removeChild(textarea);
+
+                    setTimeout(() => {
+                        this.textContent = 'Copiar';
+                    }, 2000);
+                });
+            });
+            
+            showContent('visao-geral');
+        });
+    </script>
+</body>
+</html>
